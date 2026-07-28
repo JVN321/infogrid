@@ -1,0 +1,111 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { HeroSlide } from "@/data/skeletonData";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+interface HeroSectionProps {
+  slides: HeroSlide[];
+  isSkeleton?: boolean;
+}
+
+export const HeroSection: React.FC<HeroSectionProps> = ({
+  slides,
+  isSkeleton,
+}) => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    if (isSkeleton || slides.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [slides.length, isSkeleton]);
+
+  if (isSkeleton) {
+    return (
+      <div className="w-full bg-blue-50/60 rounded-2xl border border-blue-100 p-4 sm:p-6 my-2 animate-pulse flex-shrink-0">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+          <div className="lg:col-span-6 space-y-3">
+            <div className="h-4 w-28 bg-slate-200 rounded"></div>
+            <div className="h-8 w-3/4 bg-slate-300 rounded"></div>
+            <div className="h-4 w-1/2 bg-slate-200 rounded"></div>
+          </div>
+          <div className="lg:col-span-6 h-40 bg-slate-200 rounded-2xl"></div>
+        </div>
+      </div>
+    );
+  }
+
+  const slide = slides[currentSlide] || slides[0];
+
+  return (
+    <section className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-gradient-to-r from-blue-50 via-sky-50/90 to-blue-100/70 border border-blue-100 shadow-2xs my-2 flex-shrink-0 transition-all">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 p-4 sm:p-6 lg:p-8 items-center min-h-0">
+        {/* Left Content */}
+        <div className="lg:col-span-6 z-10 flex flex-col justify-center space-y-1.5 sm:space-y-2">
+          <span className="text-slate-500 font-semibold text-xs sm:text-sm lg:text-base tracking-tight">
+            {slide.welcomeText}
+          </span>
+          <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-blue-950 tracking-tight leading-tight">
+            {slide.titleHighlight}
+          </h2>
+          <div className="w-10 h-1 bg-blue-600 rounded-full my-1"></div>
+          <p className="text-slate-600 font-medium text-xs sm:text-sm lg:text-base leading-snug">
+            {slide.tagline}
+          </p>
+
+          {/* Slider Pagination Controls */}
+          <div className="flex items-center gap-2 pt-2 sm:pt-3">
+            {slides.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentSlide(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+                className={`transition-all duration-300 rounded-full ${
+                  idx === currentSlide
+                    ? "w-7 h-2.5 bg-blue-600 shadow-2xs"
+                    : "w-2.5 h-2.5 bg-blue-200 hover:bg-blue-400"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Right Banner Image */}
+        <div className="lg:col-span-6 relative z-10 flex-1">
+          <div className="relative rounded-2xl overflow-hidden shadow-md border-2 border-white group">
+            <img
+              src={slide.image}
+              alt={slide.titleHighlight}
+              className="w-full h-36 sm:h-48 md:h-56 lg:h-64 object-cover object-center transform group-hover:scale-105 transition-transform duration-700"
+            />
+            {slides.length > 1 && (
+              <div className="absolute bottom-2 right-2 flex gap-1.5">
+                <button
+                  onClick={() =>
+                    setCurrentSlide((prev) =>
+                      prev === 0 ? slides.length - 1 : prev - 1
+                    )
+                  }
+                  className="p-1.5 bg-white/80 backdrop-blur-xs text-blue-950 rounded-full hover:bg-white transition-colors shadow-2xs"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentSlide((prev) => (prev + 1) % slides.length)
+                  }
+                  className="p-1.5 bg-white/80 backdrop-blur-xs text-blue-950 rounded-full hover:bg-white transition-colors shadow-2xs"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};

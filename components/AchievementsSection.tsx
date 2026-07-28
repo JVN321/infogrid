@@ -1,0 +1,123 @@
+"use client";
+
+import React from "react";
+import { AchievementItem } from "@/data/skeletonData";
+import { Trophy, Medal, Award, Star, ArrowRight } from "lucide-react";
+
+interface AchievementsSectionProps {
+  achievements: AchievementItem[];
+  isSkeleton?: boolean;
+}
+
+export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
+  achievements,
+  isSkeleton,
+}) => {
+  const getBadgeIcon = (type: AchievementItem["badgeType"]) => {
+    switch (type) {
+      case "trophy":
+        return {
+          icon: <Trophy className="w-4 h-4 text-amber-600" />,
+          bg: "bg-amber-100 border-amber-300",
+        };
+      case "medal":
+        return {
+          icon: <Medal className="w-4 h-4 text-blue-600" />,
+          bg: "bg-blue-100 border-blue-300",
+        };
+      case "ribbon":
+        return {
+          icon: <Award className="w-4 h-4 text-rose-600" />,
+          bg: "bg-rose-100 border-rose-300",
+        };
+      case "star":
+        return {
+          icon: <Star className="w-4 h-4 text-sky-600" />,
+          bg: "bg-sky-100 border-sky-300",
+        };
+      default:
+        return {
+          icon: <Trophy className="w-4 h-4 text-amber-600" />,
+          bg: "bg-amber-100 border-amber-300",
+        };
+    }
+  };
+
+  return (
+    <section className="my-3 sm:my-4 flex-shrink-0">
+      {/* Section Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shadow-xs">
+            <Trophy className="w-4 h-4" />
+          </div>
+          <h3 className="text-base sm:text-lg font-extrabold text-blue-950 tracking-tight uppercase">
+            ACHIEVEMENTS SHOWCASE
+          </h3>
+        </div>
+        <a
+          href="#"
+          className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors group"
+        >
+          <span>View All</span>
+          <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+        </a>
+      </div>
+
+      {/* Grid of 4 Achievement Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {isSkeleton
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-100 shadow-xs animate-pulse"
+              >
+                <div className="h-32 bg-slate-200 rounded-xl mb-3"></div>
+                <div className="h-4 w-3/4 bg-slate-300 rounded mb-2"></div>
+                <div className="h-3 w-full bg-slate-200 rounded mb-1"></div>
+              </div>
+            ))
+          : achievements.map((item) => {
+              const badge = getBadgeIcon(item.badgeType);
+              return (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200/80 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+                >
+                  <div>
+                    {/* Thumbnail Image with Top-Left Icon Badge Overlay */}
+                    <div className="relative rounded-xl overflow-hidden mb-2.5 aspect-16/10 bg-slate-100">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div
+                        className={`absolute top-2 left-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border shadow-xs backdrop-blur-xs ${badge.bg}`}
+                      >
+                        {badge.icon}
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <h4 className="font-extrabold text-blue-950 text-sm sm:text-base leading-snug mb-1 group-hover:text-blue-600 transition-colors">
+                      {item.title}
+                    </h4>
+
+                    {/* Description */}
+                    <p className="text-slate-600 text-xs leading-relaxed line-clamp-2 mb-2">
+                      {item.description}
+                    </p>
+                  </div>
+
+                  {/* Date */}
+                  <div className="text-blue-600 text-xs font-bold pt-2 border-t border-slate-100">
+                    {item.date}
+                  </div>
+                </div>
+              );
+            })}
+      </div>
+    </section>
+  );
+};
