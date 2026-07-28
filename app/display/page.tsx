@@ -95,7 +95,15 @@ export default function DisplayPage() {
       }
     }
 
+    // Initial sync
     syncFromApi();
+
+    // Soft refresh background polling every 2 minutes
+    const intervalId = setInterval(() => {
+      syncFromApi();
+    }, 120 * 1000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   return (
