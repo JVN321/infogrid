@@ -124,10 +124,13 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
     }
   };
 
-  const visibleEvents = filteredUpcoming.slice(
-    currentPage * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE + ITEMS_PER_PAGE
-  );
+  const visibleEvents =
+    filteredUpcoming.length <= ITEMS_PER_PAGE
+      ? filteredUpcoming
+      : Array.from({ length: ITEMS_PER_PAGE }).map((_, j) => {
+          const startIndex = currentPage * ITEMS_PER_PAGE;
+          return filteredUpcoming[(startIndex + j) % filteredUpcoming.length];
+        });
 
   const handlePrevPage = () => {
     changePage((currentPage - 1 + totalPages) % totalPages);

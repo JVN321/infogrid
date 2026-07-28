@@ -36,10 +36,13 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
     return () => clearInterval(interval);
   }, [achievements.length, isSkeleton, currentPage, totalPages]);
 
-  const displayItems = achievements.slice(
-    currentPage * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE + ITEMS_PER_PAGE
-  );
+  const displayItems =
+    achievements.length <= ITEMS_PER_PAGE
+      ? achievements
+      : Array.from({ length: ITEMS_PER_PAGE }).map((_, j) => {
+          const startIndex = currentPage * ITEMS_PER_PAGE;
+          return achievements[(startIndex + j) % achievements.length];
+        });
 
   return (
     <section className="my-3 sm:my-4 flex-shrink-0">
