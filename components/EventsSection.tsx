@@ -208,9 +208,6 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                   alt="Scan QR for Event"
                   className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-contain bg-white p-0.5"
                 />
-                <span className="text-[8px] font-black text-blue-950 uppercase tracking-tighter mt-1">
-                  SCAN TO REGISTER
-                </span>
               </div>
             )}
           </div>
@@ -305,17 +302,8 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                     </div>
                   </div>
 
-                  {/* Event Action, QR Code & Category */}
+                  {/* Event Action & Category */}
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* Mini QR Code Preview on Event Card */}
-                    <div className="hidden sm:flex items-center gap-1 bg-slate-50 border border-slate-200 p-0.5 rounded-lg group-hover:border-blue-300 transition-colors" title="Scan to open on Grid">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(eventUrl)}`}
-                        alt="QR Code"
-                        className="w-7 h-7 rounded-md object-contain bg-white"
-                      />
-                    </div>
-
                     <span
                       className={`hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold rounded-lg border ${evt.categoryBadgeBg}`}
                     >
