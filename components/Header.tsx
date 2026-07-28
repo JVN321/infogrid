@@ -32,16 +32,12 @@ export const Header: React.FC<HeaderProps> = ({ data, isSkeleton }) => {
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
         {/* Left: Logo & College Name */}
         <div className="flex items-center gap-3">
-          <div className="relative w-12 h-14 flex-shrink-0 flex items-center justify-center bg-gradient-to-b from-blue-900 via-blue-800 to-indigo-900 text-white rounded-lg shadow-xs border border-amber-400/40">
-            <div className="flex flex-col items-center justify-center p-0.5 text-center">
-              <span className="font-black text-lg tracking-tighter leading-none text-amber-300">
-                M
-              </span>
-              <div className="w-7 h-[1.5px] bg-amber-400 my-0.5"></div>
-              <span className="text-[7px] tracking-widest font-bold text-slate-200 uppercase">
-                ESTD. 2000
-              </span>
-            </div>
+          <div className="relative w-16 h-18 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
+            <img
+              src="/MuthootLogo.png"
+              alt="Muthoot Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
 
           <div className="flex flex-col">

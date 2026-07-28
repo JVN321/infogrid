@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<"news" | "generalNews" | "events" | "achievements">("news");
+  const [activeTab, setActiveTab] = useState<"news" | "generalNews" | "events" | "achievements" | "hero">("news");
 
   // Auth States
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -143,6 +143,19 @@ export default function AdminPage() {
     image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=600&q=80",
   });
 
+  // Form states for Welcome Section (Hero Slide 1)
+  const [heroForm, setHeroForm] = useState<{
+    welcomeText: string;
+    titleHighlight: string;
+    tagline: string;
+    image: string;
+  }>({
+    welcomeText: "Welcome to",
+    titleHighlight: "Muthoot Community",
+    tagline: "Stay informed. Stay inspired.",
+    image: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
+  });
+
   const [uploadingImage, setUploadingImage] = useState<boolean>(false);
 
   // Check auth on mount
@@ -210,6 +223,25 @@ export default function AdminPage() {
         fetch("/api/events"),
         fetch("/api/achievements"),
       ]);
+
+      // Load welcome / hero section from local storage if existing
+      const localDataStr = localStorage.getItem("infogrid_portal_data");
+      if (localDataStr) {
+        try {
+          const parsed = JSON.parse(localDataStr);
+          if (parsed.heroSlides && parsed.heroSlides.length > 0) {
+            const slide = parsed.heroSlides[0];
+            setHeroForm({
+              welcomeText: slide.welcomeText || "Welcome to",
+              titleHighlight: slide.titleHighlight || "Muthoot Community",
+              tagline: slide.tagline || "Stay informed. Stay inspired.",
+              image: slide.image || "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
+            });
+          }
+        } catch (e) {
+          console.error("Error parsing hero slides", e);
+        }
+      }
 
       let dbWorking = false;
 
@@ -353,7 +385,7 @@ export default function AdminPage() {
   // Upload image handler via Cloudflare R2 API
   const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    target: "news" | "generalNews" | "achievement"
+    target: "news" | "generalNews" | "achievement" | "hero"
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -374,6 +406,8 @@ export default function AdminPage() {
           setNewsForm((prev) => ({ ...prev, image: data.url }));
         } else if (target === "generalNews") {
           setGenNewsForm((prev) => ({ ...prev, image: data.url }));
+        } else if (target === "hero") {
+          setHeroForm((prev) => ({ ...prev, image: data.url }));
         } else {
           setAchievementForm((prev) => ({ ...prev, image: data.url }));
         }
@@ -836,6 +870,25 @@ export default function AdminPage() {
     });
   };
 
+  const handleSaveHero = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!heroForm.welcomeText || !heroForm.titleHighlight) {
+      showNotify("Please fill in welcome text and title highlight", "error");
+      return;
+    }
+    const existing = localStorage.getItem("infogrid_portal_data");
+    const dataObj = existing ? JSON.parse(existing) : defaultSkeletonData;
+    if (!dataObj.heroSlides) {
+      dataObj.heroSlides = [...defaultSkeletonData.heroSlides];
+    }
+    dataObj.heroSlides[0] = {
+      id: 1,
+      ...heroForm,
+    };
+    localStorage.setItem("infogrid_portal_data", JSON.stringify(dataObj));
+    showNotify("Welcome / Hero Section updated successfully!");
+  };
+
   const handleResetAllDefaults = () => {
     if (confirm("Reset all news, events, and achievements to default initial dataset?")) {
       setNewsList(defaultSkeletonData.news);
@@ -1085,6 +1138,18 @@ export default function AdminPage() {
         >
           <Trophy className="w-4 h-4" />
           <span>Achievements ({achievementsList.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("hero")}
+          className={`flex items-center gap-2 px-5 py-3 font-bold text-sm border-b-2 transition-all ${
+            activeTab === "hero"
+              ? "border-blue-500 text-blue-400 bg-blue-500/5 rounded-t-xl"
+              : "border-transparent text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Welcome Hero</span>
         </button>
       </div>
 
@@ -1437,7 +1502,7 @@ export default function AdminPage() {
                 <span>{isEditingEvent ? "Update Campus Event" : "Add Campus Event"}</span>
               </button>
             </form>
-          ) : (
+          ) : activeTab === "achievements" ? (
             /* ACHIEVEMENTS FORM */
             <form onSubmit={handleSaveAchievement} className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -1537,6 +1602,82 @@ export default function AdminPage() {
               >
                 {isEditingAchievement ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                 <span>{isEditingAchievement ? "Update Achievement" : "Publish Achievement"}</span>
+              </button>
+            </form>
+          ) : (
+            /* HERO FORM */
+            <form onSubmit={handleSaveHero} className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-400" />
+                  <span>Edit Welcome / Hero Section</span>
+                </h3>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Welcome Text *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Welcome to"
+                  value={heroForm.welcomeText}
+                  onChange={(e) => setHeroForm({ ...heroForm, welcomeText: e.target.value })}
+                  className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Title Highlight *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Muthoot Community"
+                  value={heroForm.titleHighlight}
+                  onChange={(e) => setHeroForm({ ...heroForm, titleHighlight: e.target.value })}
+                  className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Tagline</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Stay informed. Stay inspired."
+                  value={heroForm.tagline}
+                  onChange={(e) => setHeroForm({ ...heroForm, tagline: e.target.value })}
+                  className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Image URL or Cloudflare R2 Upload</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    required
+                    placeholder="https://..."
+                    value={heroForm.image}
+                    onChange={(e) => setHeroForm({ ...heroForm, image: e.target.value })}
+                    className="flex-1 text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  <label className="px-3 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl cursor-pointer flex items-center justify-center transition-colors">
+                    <Upload className="w-4 h-4" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, "hero")}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+              >
+                <Check className="w-4 h-4" />
+                <span>Save Welcome Section</span>
               </button>
             </form>
           )}
@@ -1837,6 +1978,27 @@ export default function AdminPage() {
                     </div>
                   ))
                 )}
+              </div>
+            )}
+
+            {/* HERO PREVIEW */}
+            {activeTab === "hero" && (
+              <div className="space-y-4">
+                <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl">
+                  <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-3">Live Preview Representation</h4>
+                  <div className="bg-slate-900 rounded-xl p-4 border border-slate-800/80">
+                    <div className="space-y-2">
+                      <span className="text-slate-400 font-semibold text-xs">{heroForm.welcomeText}</span>
+                      <h2 className="text-lg font-extrabold text-white leading-tight">{heroForm.titleHighlight}</h2>
+                      <p className="text-slate-400 font-medium text-xs">{heroForm.tagline}</p>
+                    </div>
+                    {heroForm.image && (
+                      <div className="mt-4 rounded-lg overflow-hidden border border-slate-700 h-32 bg-slate-950">
+                        <img src={heroForm.image} alt="Hero image" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </div>
