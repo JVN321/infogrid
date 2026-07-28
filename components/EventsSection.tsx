@@ -7,30 +7,76 @@ import { Calendar, Clock, MapPin, ChevronLeft, ChevronRight, ExternalLink } from
 interface EventsSectionProps {
   featured: FeaturedEvent;
   upcoming: UpcomingEvent[];
+  maxFinishedEvents?: number;
   isSkeleton?: boolean;
 }
 
 export const EventsSection: React.FC<EventsSectionProps> = ({
   featured,
   upcoming,
+  maxFinishedEvents = 2,
   isSkeleton,
 }) => {
   const ITEMS_PER_PAGE = 3;
   const [currentPage, setCurrentPage] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  const totalPages = Math.ceil(upcoming.length / ITEMS_PER_PAGE) || 1;
+  // Helper to determine event URLs
+  const getGridEventUrl = (evt: UpcomingEvent | FeaturedEvent | any) => {
+    if (evt.ctaLink && evt.ctaLink.includes("grid.mitsmediaclub.com")) {
+      return evt.ctaLink;
+    }
+    const eventId = evt.externalId || evt.id;
+    return eventId ? `https://grid.mitsmediaclub.com/events/${eventId}` : "https://grid.mitsmediaclub.com/events";
+  };
+
+  // Filter: Show all events with registrations open + top maxFinishedEvents newest finished events
+  const openEvents = upcoming.filter((evt) => {
+    const cat = (evt.category || "").toLowerCase();
+    const isClosed = cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended");
+    return !isClosed;
+  });
+
+  const finishedEvents = upcoming.filter((evt) => {
+    const cat = (evt.category || "").toLowerCase();
+    return cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended");
+  });
+
+  const filteredUpcoming = [
+    ...openEvents,
+    ...finishedEvents.slice(0, maxFinishedEvents),
+  ];
+
+  // Pick top active event from filtered list for featured card, ensuring real event image & details are shown
+  const primaryEvent = filteredUpcoming[0];
+  const activeFeatured = primaryEvent
+    ? {
+        title: primaryEvent.title,
+        tagline: primaryEvent.tagline || primaryEvent.description || "Registration Open",
+        badge: primaryEvent.badge || primaryEvent.category || "Featured Event",
+        dateRange: primaryEvent.dateRange || primaryEvent.date || "",
+        venue: primaryEvent.venue || "Campus",
+        image: primaryEvent.image || featured.image,
+        ctaText: primaryEvent.ctaText || "Register Now",
+        ctaLink: getGridEventUrl(primaryEvent),
+      }
+    : {
+        ...featured,
+        ctaLink: getGridEventUrl(featured),
+      };
+
+  const totalPages = Math.ceil(filteredUpcoming.length / ITEMS_PER_PAGE) || 1;
 
   // Auto-slide looping effect
   useEffect(() => {
-    if (isPaused || upcoming.length <= ITEMS_PER_PAGE) return;
+    if (isPaused || filteredUpcoming.length <= ITEMS_PER_PAGE) return;
 
     const timer = setInterval(() => {
       setCurrentPage((prev) => (prev + 1) % totalPages);
     }, 4500);
 
     return () => clearInterval(timer);
-  }, [isPaused, upcoming.length, totalPages]);
+  }, [isPaused, filteredUpcoming.length, totalPages]);
 
   const getDateColorClasses = (color: UpcomingEvent["color"]) => {
     switch (color) {
@@ -67,7 +113,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
     }
   };
 
-  const visibleEvents = upcoming.slice(
+  const visibleEvents = filteredUpcoming.slice(
     currentPage * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE + ITEMS_PER_PAGE
   );
@@ -80,14 +126,6 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
     setCurrentPage((prev) => (prev + 1) % totalPages);
   };
 
-  const getGridEventUrl = (evt: UpcomingEvent) => {
-    if (evt.ctaLink && evt.ctaLink.includes("grid.mitsmediaclub.com")) {
-      return evt.ctaLink;
-    }
-    const eventId = evt.externalId || evt.id;
-    return `https://grid.mitsmediaclub.com/events/${eventId}`;
-  };
-
   return (
     <section className="my-2 sm:my-3 flex-shrink-0">
       {/* Section Header with Carousel Navigation Controls */}
@@ -97,7 +135,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             CAMPUS EVENTS
           </h3>
           <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-            {upcoming.length} Total
+            {openEvents.length} Open ({filteredUpcoming.length} Shown)
           </span>
         </div>
 
@@ -130,49 +168,65 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
       {/* 2 Column Split Layout - Constrained Height for 9:16 Screens */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
         {/* Left Column: Featured Event Card Banner */}
-        <div className="lg:col-span-5 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-3.5 sm:p-5 min-h-[190px] sm:min-h-[220px] border border-blue-900/30 select-none group">
+        <div className="lg:col-span-5 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-3.5 sm:p-5 min-h-[200px] sm:min-h-[230px] border border-blue-900/30 select-none group bg-slate-900">
           <img
-            src={featured.image}
-            alt={featured.title}
+            src={activeFeatured.image}
+            alt={activeFeatured.title}
             className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-blue-950/80 to-blue-950/40"></div>
 
-          {/* Top Badge */}
-          <div className="relative z-10">
+          {/* Top Row: Badge & QR Code Overlay */}
+          <div className="relative z-10 flex items-start justify-between">
             <span className="inline-block px-2.5 py-0.5 bg-blue-600/90 text-white text-[11px] font-bold rounded-full backdrop-blur-xs shadow-xs border border-blue-400/40">
-              {featured.badge}
+              {activeFeatured.badge}
             </span>
+
+            {/* Event Link QR Code Overlay Box */}
+            {activeFeatured.ctaLink && activeFeatured.ctaLink !== "#" && (
+              <div className="flex flex-col items-center bg-white/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200 shadow-lg group-hover:scale-105 transition-transform">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                    activeFeatured.ctaLink
+                  )}`}
+                  alt="Scan QR for Event"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-contain bg-white p-0.5"
+                />
+                <span className="text-[8px] font-black text-blue-950 uppercase tracking-tighter mt-1">
+                  SCAN TO REGISTER
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Bottom Details */}
-          <div className="relative z-10 space-y-1.5">
+          <div className="relative z-10 space-y-1.5 pt-4">
             <h4 className="text-lg sm:text-xl font-black text-white tracking-tight uppercase leading-tight line-clamp-1">
-              {featured.title}
+              {activeFeatured.title}
             </h4>
             <p className="text-blue-200 font-semibold text-xs line-clamp-1">
-              {featured.tagline}
+              {activeFeatured.tagline}
             </p>
 
             <div className="flex items-center gap-3 text-[11px] text-slate-300 pt-0.5">
               <div className="flex items-center gap-1">
                 <Calendar className="w-3 h-3 text-blue-400" />
-                <span>{featured.dateRange}</span>
+                <span>{activeFeatured.dateRange}</span>
               </div>
               <div className="flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-blue-400" />
-                <span className="line-clamp-1">{featured.venue}</span>
+                <span className="line-clamp-1">{activeFeatured.venue}</span>
               </div>
             </div>
 
             <div className="pt-1">
               <a
-                href={featured.ctaLink && featured.ctaLink !== "#" ? featured.ctaLink : "https://grid.mitsmediaclub.com/events"}
+                href={activeFeatured.ctaLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition-colors"
               >
-                <span>{featured.ctaText || "View on Grid"}</span>
+                <span>{activeFeatured.ctaText || "View on Grid"}</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
@@ -245,8 +299,17 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                     </div>
                   </div>
 
-                  {/* Event Action & Category */}
+                  {/* Event Action, QR Code & Category */}
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Mini QR Code Preview on Event Card */}
+                    <div className="hidden sm:flex items-center gap-1 bg-slate-50 border border-slate-200 p-0.5 rounded-lg group-hover:border-blue-300 transition-colors" title="Scan to open on Grid">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(eventUrl)}`}
+                        alt="QR Code"
+                        className="w-7 h-7 rounded-md object-contain bg-white"
+                      />
+                    </div>
+
                     <span
                       className={`hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold rounded-lg border ${evt.categoryBadgeBg}`}
                     >

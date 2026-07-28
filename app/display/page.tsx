@@ -12,9 +12,20 @@ import { FooterSection } from "@/components/FooterSection";
 export default function DisplayPage() {
   const [data, setData] = useState<PortalData>(defaultSkeletonData);
   const [isSkeleton, setIsSkeleton] = useState(false);
+  const [maxFinishedEvents, setMaxFinishedEvents] = useState<number>(2);
 
   useEffect(() => {
-    // 1. Check LocalStorage sync
+    // 1. Check LocalStorage settings & sync
+    const settings = localStorage.getItem("infogrid_portal_settings");
+    if (settings) {
+      try {
+        const parsedSettings = JSON.parse(settings);
+        if (typeof parsedSettings.maxFinishedEvents === "number") {
+          setMaxFinishedEvents(parsedSettings.maxFinishedEvents);
+        }
+      } catch (e) {}
+    }
+
     const local = localStorage.getItem("infogrid_portal_data");
     if (local) {
       try {
@@ -88,6 +99,7 @@ export default function DisplayPage() {
           <EventsSection
             featured={data.featuredEvent}
             upcoming={data.upcomingEvents}
+            maxFinishedEvents={maxFinishedEvents}
             isSkeleton={isSkeleton}
           />
 

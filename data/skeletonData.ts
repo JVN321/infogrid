@@ -68,6 +68,13 @@ export interface UpcomingEvent {
   category: string;
   categoryBadgeBg: string;
   ctaLink?: string;
+  tagline?: string;
+  description?: string;
+  dateRange?: string;
+  date?: string;
+  image?: string;
+  badge?: string;
+  ctaText?: string;
 }
 
 export interface AchievementItem {

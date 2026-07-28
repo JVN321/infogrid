@@ -157,6 +157,27 @@ export default function AdminPage() {
   });
 
   const [uploadingImage, setUploadingImage] = useState<boolean>(false);
+  const [maxFinishedEvents, setMaxFinishedEvents] = useState<number>(2);
+
+  // Load settings on mount
+  useEffect(() => {
+    const settings = localStorage.getItem("infogrid_portal_settings");
+    if (settings) {
+      try {
+        const parsed = JSON.parse(settings);
+        if (typeof parsed.maxFinishedEvents === "number") {
+          setMaxFinishedEvents(parsed.maxFinishedEvents);
+        }
+      } catch (e) {}
+    }
+  }, []);
+
+  const handleUpdateMaxFinishedEvents = (val: number) => {
+    const cleanVal = Math.max(0, val);
+    setMaxFinishedEvents(cleanVal);
+    localStorage.setItem("infogrid_portal_settings", JSON.stringify({ maxFinishedEvents: cleanVal }));
+    showNotify(`Display filter updated: Showing all open events + ${cleanVal} finished event(s).`, "info");
+  };
 
   // Check auth on mount
   useEffect(() => {
@@ -215,6 +236,28 @@ export default function AdminPage() {
     }
   };
 
+  const deduplicateEventsList = (list: UpcomingEvent[]): UpcomingEvent[] => {
+    const seenIds = new Set<string>();
+    const seenTitles = new Set<string>();
+    const result: UpcomingEvent[] = [];
+
+    for (const item of list) {
+      if (!item) continue;
+      const keyId = item.externalId || item.id;
+      const cleanTitle = (item.title || "").trim().toLowerCase();
+
+      if (keyId && seenIds.has(keyId)) continue;
+      if (cleanTitle && seenTitles.has(cleanTitle)) continue;
+
+      if (keyId) seenIds.add(keyId);
+      if (cleanTitle) seenTitles.add(cleanTitle);
+
+      result.push(item);
+    }
+
+    return result;
+  };
+
   const fetchInitialData = async () => {
     try {
       const [newsRes, genNewsRes, eventsRes, achRes] = await Promise.all([
@@ -261,12 +304,12 @@ export default function AdminPage() {
       if (eventsRes.ok) {
         const eventsData = await eventsRes.json();
         if (Array.isArray(eventsData) && eventsData.length > 0) {
-          setEventsList(eventsData);
+          setEventsList(deduplicateEventsList(eventsData));
         } else {
-          setEventsList(defaultSkeletonData.upcomingEvents);
+          setEventsList(deduplicateEventsList(defaultSkeletonData.upcomingEvents));
         }
       } else {
-        setEventsList(defaultSkeletonData.upcomingEvents);
+        setEventsList(deduplicateEventsList(defaultSkeletonData.upcomingEvents));
       }
 
       if (dbWorking) {
@@ -285,18 +328,18 @@ export default function AdminPage() {
         const parsed = JSON.parse(local);
         setNewsList(parsed.news || defaultSkeletonData.news);
         setGeneralNewsList(parsed.generalNews || defaultSkeletonData.generalNews);
-        setEventsList(parsed.upcomingEvents || defaultSkeletonData.upcomingEvents);
+        setEventsList(deduplicateEventsList(parsed.upcomingEvents || defaultSkeletonData.upcomingEvents));
         setAchievementsList(parsed.achievements || defaultSkeletonData.achievements);
       } catch (e) {
         setNewsList(defaultSkeletonData.news);
         setGeneralNewsList(defaultSkeletonData.generalNews);
-        setEventsList(defaultSkeletonData.upcomingEvents);
+        setEventsList(deduplicateEventsList(defaultSkeletonData.upcomingEvents));
         setAchievementsList(defaultSkeletonData.achievements);
       }
     } else {
       setNewsList(defaultSkeletonData.news);
       setGeneralNewsList(defaultSkeletonData.generalNews);
-      setEventsList(defaultSkeletonData.upcomingEvents);
+      setEventsList(deduplicateEventsList(defaultSkeletonData.upcomingEvents));
       setAchievementsList(defaultSkeletonData.achievements);
     }
   };
@@ -315,12 +358,31 @@ export default function AdminPage() {
           alreadyExistedCount: data.alreadyExistedCount,
         });
 
+        // Re-fetch clean list from DB if possible, or deduplicate against current state
+        let updatedList: UpcomingEvent[] = [];
+        try {
+          const freshRes = await fetch("/api/events");
+          if (freshRes.ok) {
+            const freshData = await freshRes.json();
+            if (Array.isArray(freshData) && freshData.length > 0) {
+              updatedList = freshData;
+            }
+          }
+        } catch (e) {
+          // Ignore fallback
+        }
+
+        if (updatedList.length === 0) {
+          updatedList = [...data.events, ...eventsList];
+        }
+
+        const cleanEvents = deduplicateEventsList(updatedList);
+        setEventsList(cleanEvents);
+        syncToLocalStorage(newsList, generalNewsList, achievementsList, cleanEvents);
+
         if (data.newEventsCount > 0) {
-          const updatedEvents = [...data.events, ...eventsList];
-          setEventsList(updatedEvents);
-          syncToLocalStorage(newsList, generalNewsList, achievementsList, updatedEvents);
           showNotify(
-            `Successfully fetched ${data.totalRemoteEvents} remote events! Added ${data.newEventsCount} new non-redundant event(s) to database (${data.alreadyExistedCount} already existed).`,
+            `Successfully fetched ${data.totalRemoteEvents} remote events! Added ${data.newEventsCount} new non-redundant event(s) (${data.alreadyExistedCount} already existed).`,
             "success"
           );
         } else {
@@ -1740,6 +1802,44 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* DISPLAY FILTER CONTROL BOX */}
+          {activeTab === "events" && (
+            <div className="mb-4 p-4 bg-slate-900 border border-slate-800 rounded-3xl flex flex-wrap items-center justify-between gap-3 shadow-lg">
+              <div>
+                <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <span>Finished Events Limit on Display</span>
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Controls how many recently completed/closed events appear alongside all open registration events.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => handleUpdateMaxFinishedEvents(maxFinishedEvents - 1)}
+                  className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold hover:bg-slate-800 transition-colors flex items-center justify-center text-sm"
+                  title="Decrease limit"
+                >
+                  -
+                </button>
+
+                <span className="w-8 text-center font-black text-sky-400 text-sm">
+                  {maxFinishedEvents}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => handleUpdateMaxFinishedEvents(maxFinishedEvents + 1)}
+                  className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold hover:bg-slate-800 transition-colors flex items-center justify-center text-sm"
+                  title="Increase limit"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* LIST CONTAINER */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
@@ -1760,9 +1860,9 @@ export default function AdminPage() {
                 {newsList.length === 0 ? (
                   <p className="text-xs text-slate-500 italic py-6 text-center">No campus news items published yet.</p>
                 ) : (
-                  newsList.map((item) => (
+                  newsList.map((item, idx) => (
                     <div
-                      key={item.id}
+                      key={item.id ? `${item.id}-${idx}` : `news-${idx}`}
                       className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 group hover:border-slate-700 transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -1811,9 +1911,9 @@ export default function AdminPage() {
                 {generalNewsList.length === 0 ? (
                   <p className="text-xs text-slate-500 italic py-6 text-center">No general news items published yet.</p>
                 ) : (
-                  generalNewsList.map((item) => (
+                  generalNewsList.map((item, idx) => (
                     <div
-                      key={item.id}
+                      key={item.id ? `${item.id}-${idx}` : `gennews-${idx}`}
                       className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 group hover:border-slate-700 transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -1862,9 +1962,9 @@ export default function AdminPage() {
                 {eventsList.length === 0 ? (
                   <p className="text-xs text-slate-500 italic py-6 text-center">No campus events in display.</p>
                 ) : (
-                  eventsList.map((item) => (
+                  eventsList.map((item, idx) => (
                     <div
-                      key={item.id}
+                      key={item.id ? `${item.id}-${idx}` : item.externalId ? `${item.externalId}-${idx}` : `evt-${idx}`}
                       className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 group hover:border-slate-700 transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -1936,9 +2036,9 @@ export default function AdminPage() {
                 {achievementsList.length === 0 ? (
                   <p className="text-xs text-slate-500 italic py-6 text-center">No achievements items published yet.</p>
                 ) : (
-                  achievementsList.map((item) => (
+                  achievementsList.map((item, idx) => (
                     <div
-                      key={item.id}
+                      key={item.id ? `${item.id}-${idx}` : `ach-${idx}`}
                       className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 group hover:border-slate-700 transition-colors"
                     >
                       <div className="flex items-center gap-3">
