@@ -18,22 +18,25 @@ export const NewsSection: React.FC<NewsSectionProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
   const [isFading, setIsFading] = useState(false);
 
-  // Group Campus News into pages of 4
-  const campusPages: (NewsItem | GeneralNewsItem)[][] = [];
-  for (let i = 0; i < news.length; i += 4) {
-    campusPages.push(news.slice(i, i + 4));
-  }
-  if (campusPages.length === 0) {
-    campusPages.push([]);
-  }
+  // Helper function to slice items into pages of pageSize (default 4),
+  // wrapping around to the beginning if a page has fewer than pageSize items.
+  const createPages = <T,>(items: T[], pageSize = 4): T[][] => {
+    if (!items || items.length === 0) return [[]];
+    if (items.length <= pageSize) return [items];
 
-  // Group Global News into pages of 4
-  const globalPages: (NewsItem | GeneralNewsItem)[][] = [];
-  if (generalNews && generalNews.length > 0) {
-    for (let i = 0; i < generalNews.length; i += 4) {
-      globalPages.push(generalNews.slice(i, i + 4));
+    const pages: T[][] = [];
+    for (let i = 0; i < items.length; i += pageSize) {
+      const pageItems: T[] = [];
+      for (let j = 0; j < pageSize; j++) {
+        pageItems.push(items[(i + j) % items.length]);
+      }
+      pages.push(pageItems);
     }
-  }
+    return pages;
+  };
+
+  const campusPages = createPages(news, 4);
+  const globalPages = generalNews && generalNews.length > 0 ? createPages(generalNews, 4) : [];
 
   // Combine pages separately
   const pages: { type: "campus" | "global"; items: (NewsItem | GeneralNewsItem)[] }[] = [
