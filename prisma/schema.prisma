@@ -69,3 +69,14 @@ model EventItem {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 }
+
+model HeroSlide {
+  id             String   @id @default(cuid())
+  welcomeText    String   @default("Welcome to")
+  titleHighlight String   @default("InfoGrid")
+  tagline        String   @default("Stay informed. Stay inspired.")
+  image          String
+  orderIndex     Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

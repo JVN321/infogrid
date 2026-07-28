@@ -1,13 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/events - Retrieve all events from database
 export async function GET() {
   try {
     const events = await prisma.eventItem.findMany({
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json(events);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const processedEvents = events.map(evt => {
+      if (evt.date) {
+        const evtDate = new Date(evt.date);
+        if (!isNaN(evtDate.getTime()) && evtDate < today) {
+          return { ...evt, category: "Finished", ctaText: "View Event" };
+        }
+      }
+      return evt;
+    });
+
+    return NextResponse.json(processedEvents);
   } catch (error: any) {
     console.error("GET /api/events DB error:", error.message);
     return NextResponse.json(

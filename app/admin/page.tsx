@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { NewsItem, GeneralNewsItem, AchievementItem, UpcomingEvent, defaultSkeletonData } from "@/data/skeletonData";
+import { NewsItem, GeneralNewsItem, AchievementItem, UpcomingEvent, HeroSlide, defaultSkeletonData } from "@/data/skeletonData";
 import {
   Newspaper,
   Trophy,
@@ -143,17 +143,23 @@ export default function AdminPage() {
     image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=600&q=80",
   });
 
-  // Form states for Welcome Section (Hero Slide 1)
+  const [heroSlidesList, setHeroSlidesList] = useState<HeroSlide[]>([]);
+  const [isEditingHero, setIsEditingHero] = useState<boolean>(false);
+  const [editingHeroId, setEditingHeroId] = useState<string | null>(null);
+
+  // Form states for Welcome Section (Hero Slides)
   const [heroForm, setHeroForm] = useState<{
     welcomeText: string;
     titleHighlight: string;
     tagline: string;
     image: string;
+    orderIndex: number;
   }>({
     welcomeText: "Welcome to",
-    titleHighlight: "Muthoot Community",
+    titleHighlight: "InfoGrid",
     tagline: "Stay informed. Stay inspired.",
     image: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
+    orderIndex: 0,
   });
 
   const [uploadingImage, setUploadingImage] = useState<boolean>(false);
@@ -260,43 +266,27 @@ export default function AdminPage() {
 
   const fetchInitialData = async () => {
     try {
-      const [newsRes, genNewsRes, eventsRes, achRes] = await Promise.all([
+      const [newsRes, genNewsRes, eventsRes, achRes, slidesRes] = await Promise.all([
         fetch("/api/news"),
         fetch("/api/general-news"),
         fetch("/api/events"),
         fetch("/api/achievements"),
+        fetch("/api/hero-slides"),
       ]);
-
-      // Load welcome / hero section from local storage if existing
-      const localDataStr = localStorage.getItem("infogrid_portal_data");
-      if (localDataStr) {
-        try {
-          const parsed = JSON.parse(localDataStr);
-          if (parsed.heroSlides && parsed.heroSlides.length > 0) {
-            const slide = parsed.heroSlides[0];
-            setHeroForm({
-              welcomeText: slide.welcomeText || "Welcome to",
-              titleHighlight: slide.titleHighlight || "Muthoot Community",
-              tagline: slide.tagline || "Stay informed. Stay inspired.",
-              image: slide.image || "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
-            });
-          }
-        } catch (e) {
-          console.error("Error parsing hero slides", e);
-        }
-      }
 
       let dbWorking = false;
 
-      if (newsRes.ok && genNewsRes.ok && achRes.ok) {
+      if (newsRes.ok && genNewsRes.ok && achRes.ok && slidesRes.ok) {
         const newsData = await newsRes.json();
         const genNewsData = await genNewsRes.json();
         const achData = await achRes.json();
+        const slidesData = await slidesRes.json();
 
         if (Array.isArray(newsData) && Array.isArray(genNewsData) && Array.isArray(achData)) {
           setNewsList(newsData.length > 0 ? newsData : defaultSkeletonData.news);
           setGeneralNewsList(genNewsData.length > 0 ? genNewsData : defaultSkeletonData.generalNews);
           setAchievementsList(achData.length > 0 ? achData : defaultSkeletonData.achievements);
+          if (Array.isArray(slidesData)) setHeroSlidesList(slidesData);
           dbWorking = true;
         }
       }
@@ -311,6 +301,43 @@ export default function AdminPage() {
       } else {
         setEventsList(deduplicateEventsList(defaultSkeletonData.upcomingEvents));
       }
+
+      // -------------------------------------------------------------
+      // AUTOMATIC MIGRATION: Migrate localStorage Hero Slides to DB
+      // -------------------------------------------------------------
+      if (dbWorking) {
+        const local = localStorage.getItem("infogrid_portal_data");
+        if (local) {
+          try {
+            const parsed = JSON.parse(local);
+            if (parsed.heroSlides && Array.isArray(parsed.heroSlides) && parsed.heroSlides.length > 0) {
+              console.log("Migrating local hero slides to DB...");
+              for (const slide of parsed.heroSlides) {
+                // Post each slide to the database
+                await fetch("/api/hero-slides", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(slide),
+                });
+              }
+              // Delete from local storage so it doesn't migrate again
+              delete parsed.heroSlides;
+              localStorage.setItem("infogrid_portal_data", JSON.stringify(parsed));
+              
+              // Refetch slides from DB now that they are migrated
+              const freshSlidesRes = await fetch("/api/hero-slides");
+              if (freshSlidesRes.ok) {
+                const freshSlidesData = await freshSlidesRes.json();
+                if (Array.isArray(freshSlidesData)) setHeroSlidesList(freshSlidesData);
+              }
+              showNotify("Migrated previous Hero Slides to Database!", "info");
+            }
+          } catch (e) {
+            console.error("Migration error", e);
+          }
+        }
+      }
+      // -------------------------------------------------------------
 
       if (dbWorking) {
         setIsDbConnected(true);
@@ -932,23 +959,97 @@ export default function AdminPage() {
     });
   };
 
-  const handleSaveHero = (e: React.FormEvent) => {
+  const resetHeroForm = () => {
+    setIsEditingHero(false);
+    setEditingHeroId(null);
+    setHeroForm({
+      welcomeText: "Welcome to",
+      titleHighlight: "InfoGrid",
+      tagline: "Stay informed. Stay inspired.",
+      image: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
+      orderIndex: 0,
+    });
+  };
+
+  const handleEditHero = (item: HeroSlide) => {
+    setIsEditingHero(true);
+    setEditingHeroId(item.id);
+    setHeroForm({
+      welcomeText: item.welcomeText,
+      titleHighlight: item.titleHighlight,
+      tagline: item.tagline,
+      image: item.image,
+      orderIndex: item.orderIndex || 0,
+    });
+    window.scrollTo({ top: 300, behavior: "smooth" });
+  };
+
+  const handleDeleteHero = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this Hero Slide?")) return;
+    const updatedList = heroSlidesList.filter((item) => item.id !== id);
+    setHeroSlidesList(updatedList);
+
+    if (isDbConnected) {
+      try {
+        await fetch(`/api/hero-slides?id=${id}`, { method: "DELETE" });
+      } catch (e) {
+        console.error("Prisma delete error:", e);
+      }
+    }
+    showNotify("Hero Slide deleted", "info");
+  };
+
+  const handleSaveHero = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!heroForm.welcomeText || !heroForm.titleHighlight) {
-      showNotify("Please fill in welcome text and title highlight", "error");
+    if (!heroForm.welcomeText || !heroForm.titleHighlight || !heroForm.image) {
+      showNotify("Please fill in welcome text, title highlight and image", "error");
       return;
     }
-    const existing = localStorage.getItem("infogrid_portal_data");
-    const dataObj = existing ? JSON.parse(existing) : defaultSkeletonData;
-    if (!dataObj.heroSlides) {
-      dataObj.heroSlides = [...defaultSkeletonData.heroSlides];
+
+    let updatedList: HeroSlide[] = [];
+
+    if (isEditingHero && editingHeroId) {
+      updatedList = heroSlidesList.map((item) =>
+        item.id === editingHeroId ? { ...item, ...heroForm } : item
+      );
+
+      if (isDbConnected) {
+        try {
+          await fetch("/api/hero-slides", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: editingHeroId, ...heroForm }),
+          });
+        } catch (e) {
+          console.error("Prisma update error:", e);
+        }
+      }
+      showNotify("Hero Slide updated successfully!");
+    } else {
+      const newItem: HeroSlide = {
+        id: `hero-${Date.now()}`,
+        ...heroForm,
+      };
+      updatedList = [...heroSlidesList, newItem];
+
+      if (isDbConnected) {
+        try {
+          const res = await fetch("/api/hero-slides", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(heroForm),
+          });
+          const created = await res.json();
+          if (created.id) newItem.id = created.id;
+        } catch (e) {
+          console.error("Prisma create error:", e);
+        }
+      }
+      showNotify("New Hero Slide added!");
     }
-    dataObj.heroSlides[0] = {
-      id: 1,
-      ...heroForm,
-    };
-    localStorage.setItem("infogrid_portal_data", JSON.stringify(dataObj));
-    showNotify("Welcome / Hero Section updated successfully!");
+
+    setHeroSlidesList(updatedList.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0)));
+    resetHeroForm();
   };
 
   const handleResetAllDefaults = () => {
@@ -1668,80 +1769,155 @@ export default function AdminPage() {
             </form>
           ) : (
             /* HERO FORM */
-            <form onSubmit={handleSaveHero} className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="font-extrabold text-base text-white flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-blue-400" />
-                  <span>Edit Welcome / Hero Section</span>
-                </h3>
-              </div>
+            <div className="space-y-4">
+              <form onSubmit={handleSaveHero} className="space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+                    {isEditingHero ? <Edit className="w-4 h-4 text-blue-400" /> : <Plus className="w-4 h-4 text-blue-400" />}
+                    <span>{isEditingHero ? "Edit Hero Slide" : "Add New Hero Slide"}</span>
+                  </h3>
+                  {isEditingHero && (
+                    <button
+                      type="button"
+                      onClick={resetHeroForm}
+                      className="text-xs text-rose-400 hover:underline font-semibold"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Welcome Text *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Welcome to"
-                  value={heroForm.welcomeText}
-                  onChange={(e) => setHeroForm({ ...heroForm, welcomeText: e.target.value })}
-                  className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Title Highlight *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Muthoot Community"
-                  value={heroForm.titleHighlight}
-                  onChange={(e) => setHeroForm({ ...heroForm, titleHighlight: e.target.value })}
-                  className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Tagline</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Stay informed. Stay inspired."
-                  value={heroForm.tagline}
-                  onChange={(e) => setHeroForm({ ...heroForm, tagline: e.target.value })}
-                  className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Image URL or Cloudflare R2 Upload</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    required
-                    placeholder="https://..."
-                    value={heroForm.image}
-                    onChange={(e) => setHeroForm({ ...heroForm, image: e.target.value })}
-                    className="flex-1 text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                  <label className="px-3 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl cursor-pointer flex items-center justify-center transition-colors">
-                    <Upload className="w-4 h-4" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">Welcome Text *</label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e, "hero")}
-                      className="hidden"
+                      type="text"
+                      required
+                      placeholder="e.g. Welcome to"
+                      value={heroForm.welcomeText}
+                      onChange={(e) => setHeroForm({ ...heroForm, welcomeText: e.target.value })}
+                      className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
-                  </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">Title Highlight *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. InfoGrid Community"
+                      value={heroForm.titleHighlight}
+                      onChange={(e) => setHeroForm({ ...heroForm, titleHighlight: e.target.value })}
+                      className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">Tagline</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Stay informed. Stay inspired."
+                      value={heroForm.tagline}
+                      onChange={(e) => setHeroForm({ ...heroForm, tagline: e.target.value })}
+                      className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">Sort Order</label>
+                    <input
+                      type="number"
+                      required
+                      value={heroForm.orderIndex}
+                      onChange={(e) => setHeroForm({ ...heroForm, orderIndex: parseInt(e.target.value) || 0 })}
+                      className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Image URL or Supabase Storage Upload</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      required
+                      placeholder="https://..."
+                      value={heroForm.image}
+                      onChange={(e) => setHeroForm({ ...heroForm, image: e.target.value })}
+                      className="flex-1 text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                    <label className="px-3 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl cursor-pointer flex items-center justify-center transition-colors">
+                      <Upload className="w-4 h-4" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, "hero")}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+                >
+                  {isEditingHero ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  <span>{isEditingHero ? "Update Hero Slide" : "Add Hero Slide"}</span>
+                </button>
+              </form>
+
+              {/* HERO SLIDES LIST */}
+              <div className="pt-6 mt-6 border-t border-slate-800">
+                <h3 className="font-extrabold text-sm text-slate-300 uppercase tracking-widest pb-3">
+                  Active Hero Slides
+                </h3>
+                <div className="space-y-3">
+                  {heroSlidesList.length === 0 ? (
+                    <p className="text-xs text-slate-500">No slides configured. Default skeleton may be shown.</p>
+                  ) : (
+                    heroSlidesList.map((item) => (
+                      <div
+                        key={item.id}
+                        className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center gap-4 group hover:border-slate-700 transition-colors"
+                      >
+                        <img
+                          src={item.image}
+                          alt="Hero"
+                          className="w-20 h-14 object-cover rounded-lg border border-slate-800 bg-slate-900 flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-bold text-white truncate flex items-center gap-2">
+                            <span className="text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-400 border border-blue-800/50">
+                              #{item.orderIndex}
+                            </span>
+                            {item.welcomeText} {item.titleHighlight}
+                          </h4>
+                          <p className="text-xs text-slate-400 truncate mt-1">{item.tagline}</p>
+                        </div>
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleEditHero(item)}
+                            className="p-2 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteHero(item.id.toString())}
+                            className="p-2 bg-slate-800 hover:bg-rose-900/50 text-rose-400 rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
-              >
-                <Check className="w-4 h-4" />
-                <span>Save Welcome Section</span>
-              </button>
-            </form>
+            </div>
           )}
         </div>
 

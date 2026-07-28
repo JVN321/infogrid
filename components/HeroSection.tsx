@@ -32,7 +32,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     return () => clearInterval(interval);
   }, [slides.length, isSkeleton, currentSlide]);
 
-  if (isSkeleton) {
+  if (isSkeleton || !slides || slides.length === 0) {
     return (
       <div className="w-full bg-blue-50/60 rounded-2xl border border-blue-100 p-4 sm:p-6 my-2 animate-pulse flex-shrink-0">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">

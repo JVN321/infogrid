@@ -30,6 +30,9 @@ export default function DisplayPage() {
     if (local) {
       try {
         const parsed = JSON.parse(local);
+        if (parsed.heroSlides) {
+          delete parsed.heroSlides; // Force DB as the only source of truth for hero slides
+        }
         setData((prev) => ({ ...prev, ...parsed }));
       } catch (e) {
         console.error("Localstorage parse error", e);
@@ -39,17 +42,19 @@ export default function DisplayPage() {
     // 2. Fetch live data from DB via Prisma API if available
     async function syncFromApi() {
       try {
-        const [newsRes, genNewsRes, eventsRes, achRes] = await Promise.all([
+        const [newsRes, genNewsRes, eventsRes, achRes, slidesRes] = await Promise.all([
           fetch("/api/news"),
           fetch("/api/general-news"),
           fetch("/api/events"),
           fetch("/api/achievements"),
+          fetch("/api/hero-slides"),
         ]);
 
-        if (newsRes.ok && genNewsRes.ok && achRes.ok) {
+        if (newsRes.ok && genNewsRes.ok && achRes.ok && slidesRes.ok) {
           const newsData = await newsRes.json();
           const genNewsData = await genNewsRes.json();
           const achData = await achRes.json();
+          const slidesData = await slidesRes.json();
 
           if (Array.isArray(newsData) && newsData.length > 0) {
             setData((prev) => ({ ...prev, news: newsData }));
@@ -59,6 +64,23 @@ export default function DisplayPage() {
           }
           if (Array.isArray(achData) && achData.length > 0) {
             setData((prev) => ({ ...prev, achievements: achData }));
+          }
+          if (Array.isArray(slidesData) && slidesData.length > 0) {
+            setData((prev) => ({ ...prev, heroSlides: slidesData }));
+          } else {
+            setData((prev) => ({
+              ...prev,
+              heroSlides: [
+                {
+                  id: "default-1",
+                  welcomeText: "Welcome to",
+                  titleHighlight: "InfoGrid",
+                  tagline: "Stay informed. Stay inspired.",
+                  image: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
+                  orderIndex: 0,
+                },
+              ],
+            }));
           }
         }
 
