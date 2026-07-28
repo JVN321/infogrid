@@ -141,7 +141,18 @@ export async function GET(req: NextRequest) {
         month: month,
         time: timeStr,
         venue: raw.location || "MITS Campus",
-        category: raw.isRegistrationRequired ? "Registration Open" : "Open Event",
+        category: (() => {
+          if (raw.date) {
+            const eventDate = new Date(raw.date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Start of today
+            // If the event is in the past (before today)
+            if (eventDate < today) {
+              return "Finished";
+            }
+          }
+          return raw.isRegistrationRequired ? "Registration Open" : "Open Event";
+        })(),
         color: colorChoice,
         categoryBadgeBg: categoryBadgeBg,
         image:

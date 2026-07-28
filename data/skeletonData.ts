@@ -16,11 +16,12 @@ export interface HeaderInfo {
 }
 
 export interface HeroSlide {
-  id: number;
+  id: string;
   welcomeText: string;
   titleHighlight: string;
   tagline: string;
   image: string;
+  orderIndex?: number;
 }
 
 export interface NewsItem {
@@ -134,29 +135,7 @@ export const defaultSkeletonData: PortalData = {
     liveDay: "Wednesday",
     liveDate: "28 May 2025",
   },
-  heroSlides: [
-    {
-      id: 1,
-      welcomeText: "Welcome to",
-      titleHighlight: "Muthoot Community",
-      tagline: "Stay informed. Stay inspired.",
-      image: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
-    },
-    {
-      id: 2,
-      welcomeText: "Discover Future Tech at",
-      titleHighlight: "MITS Innovation Hub",
-      tagline: "Empowering research, robotics & artificial intelligence.",
-      image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=80",
-    },
-    {
-      id: 3,
-      welcomeText: "Excellence in Education",
-      titleHighlight: "Global Placements & Growth",
-      tagline: "Building tomorrow's technology leaders today.",
-      image: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80",
-    },
-  ],
+  heroSlides: [],
   news: [],
   generalNews: [],
   featuredEvent: {
