@@ -13,14 +13,24 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   isSkeleton,
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isFading, setIsFading] = useState(false);
+
+  const changeSlide = (newIndex: number) => {
+    if (newIndex === currentSlide) return;
+    setIsFading(true);
+    setTimeout(() => {
+      setCurrentSlide(newIndex);
+      setIsFading(false);
+    }, 250);
+  };
 
   useEffect(() => {
     if (isSkeleton || slides.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
+      changeSlide((currentSlide + 1) % slides.length);
     }, 6000);
     return () => clearInterval(interval);
-  }, [slides.length, isSkeleton]);
+  }, [slides.length, isSkeleton, currentSlide]);
 
   if (isSkeleton) {
     return (
@@ -43,7 +53,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     <section className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-gradient-to-r from-blue-50 via-sky-50/90 to-blue-100/70 border border-blue-100 shadow-2xs my-2 flex-shrink-0 transition-all">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 p-4 sm:p-6 lg:p-8 items-center min-h-0">
         {/* Left Content */}
-        <div className="lg:col-span-6 z-10 flex flex-col justify-center space-y-1.5 sm:space-y-2">
+        <div
+          className={`lg:col-span-6 z-10 flex flex-col justify-center space-y-1.5 sm:space-y-2 transition-all duration-300 transform ${
+            isFading ? "opacity-0 translate-y-1 scale-[0.98]" : "opacity-100 translate-y-0 scale-100"
+          }`}
+        >
           <span className="text-slate-500 font-semibold text-xs sm:text-sm lg:text-base tracking-tight">
             {slide.welcomeText}
           </span>
@@ -60,7 +74,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             {slides.map((_, idx) => (
               <button
                 key={idx}
-                onClick={() => setCurrentSlide(idx)}
+                onClick={() => changeSlide(idx)}
                 aria-label={`Go to slide ${idx + 1}`}
                 className={`transition-all duration-300 rounded-full ${
                   idx === currentSlide
@@ -73,7 +87,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </div>
 
         {/* Right Banner Image */}
-        <div className="lg:col-span-6 relative z-10 flex-1">
+        <div
+          className={`lg:col-span-6 relative z-10 flex-1 transition-all duration-300 transform ${
+            isFading ? "opacity-0 scale-95" : "opacity-100 scale-100"
+          }`}
+        >
           <div className="relative rounded-2xl overflow-hidden shadow-md border-2 border-white group">
             <img
               src={slide.image}

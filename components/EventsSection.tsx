@@ -19,6 +19,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 }) => {
   const ITEMS_PER_PAGE = 3;
   const [currentPage, setCurrentPage] = useState(0);
+  const [isFading, setIsFading] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
   // Helper to determine event URLs
@@ -67,16 +68,25 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
   const totalPages = Math.ceil(filteredUpcoming.length / ITEMS_PER_PAGE) || 1;
 
+  const changePage = (newPage: number) => {
+    if (newPage === currentPage) return;
+    setIsFading(true);
+    setTimeout(() => {
+      setCurrentPage(newPage);
+      setIsFading(false);
+    }, 200);
+  };
+
   // Auto-slide looping effect
   useEffect(() => {
     if (isPaused || filteredUpcoming.length <= ITEMS_PER_PAGE) return;
 
     const timer = setInterval(() => {
-      setCurrentPage((prev) => (prev + 1) % totalPages);
+      changePage((currentPage + 1) % totalPages);
     }, 4500);
 
     return () => clearInterval(timer);
-  }, [isPaused, filteredUpcoming.length, totalPages]);
+  }, [isPaused, filteredUpcoming.length, totalPages, currentPage]);
 
   const getDateColorClasses = (color: UpcomingEvent["color"]) => {
     switch (color) {
@@ -119,11 +129,11 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
   );
 
   const handlePrevPage = () => {
-    setCurrentPage((prev) => (prev - 1 + totalPages) % totalPages);
+    changePage((currentPage - 1 + totalPages) % totalPages);
   };
 
   const handleNextPage = () => {
-    setCurrentPage((prev) => (prev + 1) % totalPages);
+    changePage((currentPage + 1) % totalPages);
   };
 
   return (
@@ -235,7 +245,9 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
         {/* Right Column: Upcoming Events Looping Carousel Container */}
         <div
-          className="lg:col-span-7 flex flex-col justify-between space-y-2"
+          className={`lg:col-span-7 flex flex-col justify-between space-y-2 transition-all duration-300 transform ${
+            isFading ? "opacity-0 translate-x-1 scale-[0.99]" : "opacity-100 translate-x-0 scale-100"
+          }`}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
