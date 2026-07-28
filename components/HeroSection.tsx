@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { HeroSlide } from "@/data/skeletonData";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface HeroSectionProps {
   slides: HeroSlide[];
@@ -81,28 +80,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               alt={slide.titleHighlight}
               className="w-full h-36 sm:h-48 md:h-56 lg:h-64 object-cover object-center transform group-hover:scale-105 transition-transform duration-700"
             />
-            {slides.length > 1 && (
-              <div className="absolute bottom-2 right-2 flex gap-1.5">
-                <button
-                  onClick={() =>
-                    setCurrentSlide((prev) =>
-                      prev === 0 ? slides.length - 1 : prev - 1
-                    )
-                  }
-                  className="p-1.5 bg-white/80 backdrop-blur-xs text-blue-950 rounded-full hover:bg-white transition-colors shadow-2xs"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() =>
-                    setCurrentSlide((prev) => (prev + 1) % slides.length)
-                  }
-                  className="p-1.5 bg-white/80 backdrop-blur-xs text-blue-950 rounded-full hover:bg-white transition-colors shadow-2xs"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>

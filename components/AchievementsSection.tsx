@@ -47,10 +47,7 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
     <section className="my-3 sm:my-4 flex-shrink-0">
       {/* Section Header - View All Button Removed */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shadow-xs">
-            <Trophy className="w-4 h-4" />
-          </div>
+        <div className="flex items-center gap-2">
           <h3 className="text-base sm:text-lg font-extrabold text-blue-950 tracking-tight uppercase">
             ACHIEVEMENTS SHOWCASE
           </h3>
@@ -78,18 +75,13 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
                   className="bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between select-none"
                 >
                   <div>
-                    {/* Thumbnail Image with Top-Left Icon Badge Overlay */}
+                    {/* Thumbnail Image */}
                     <div className="relative rounded-xl overflow-hidden mb-2.5 aspect-16/10 bg-slate-100">
                       <img
                         src={item.image}
                         alt={item.title}
                         className="w-full h-full object-cover object-center"
                       />
-                      <div
-                        className={`absolute top-2 left-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border shadow-xs backdrop-blur-xs ${badge.bg}`}
-                      >
-                        {badge.icon}
-                      </div>
                     </div>
 
                     {/* Title */}

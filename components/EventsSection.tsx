@@ -93,9 +93,6 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
       {/* Section Header with Carousel Navigation Controls */}
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
-            <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          </div>
           <h3 className="text-sm sm:text-base font-extrabold text-blue-950 tracking-tight uppercase">
             CAMPUS EVENTS
           </h3>
@@ -265,22 +262,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
           )}
         </div>
       </div>
-      {totalPages > 1 && (
-        <div className="flex items-center justify-end mt-2">
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalPages }).map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentPage(idx)}
-                className={`h-1.5 rounded-full transition-all ${
-                  currentPage === idx ? "w-4 bg-blue-600" : "w-1.5 bg-blue-200"
-                }`}
-                title={`Go to page ${idx + 1}`}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+
     </section>
   );
 };

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { NewsItem, GeneralNewsItem } from "@/data/skeletonData";
-import { Newspaper, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
 
 interface NewsSectionProps {
   news: NewsItem[];
@@ -37,18 +37,10 @@ export const NewsSection: React.FC<NewsSectionProps> = ({
     <section className="my-3 sm:my-4 flex-shrink-0">
       {/* Section Header */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg text-white flex items-center justify-center shadow-xs bg-blue-600">
-            <Newspaper className="w-4 h-4" />
-          </div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-base sm:text-lg font-extrabold tracking-tight uppercase text-blue-950">
-              CAMPUS NEWS
-            </h3>
-            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider bg-blue-100 text-blue-700 border border-blue-200">
-              Local
-            </span>
-          </div>
+        <div className="flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-extrabold tracking-tight uppercase text-blue-950">
+            CAMPUS NEWS
+          </h3>
         </div>
       </div>
 
