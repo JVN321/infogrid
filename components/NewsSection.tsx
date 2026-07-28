@@ -143,40 +143,42 @@ export const NewsSection: React.FC<NewsSectionProps> = ({
                 <div className="h-4 w-1/3 bg-slate-200 rounded"></div>
               </div>
             ))
-          : displayItems.map((item) => (
-              <div
-                key={item.id}
-                className={`bg-white rounded-2xl p-3 sm:p-3.5 border shadow-xs flex flex-col justify-between select-none transition-all duration-300 h-[305px] sm:h-[315px] ${
-                  mode === "campus"
-                    ? "border-slate-200/80 hover:border-blue-300 hover:shadow-md"
-                    : "border-purple-200/80 hover:border-purple-300 hover:shadow-md"
-                }`}
-              >
-                <div className="flex flex-col flex-1 justify-start">
-                  {/* Fixed Uniform Image Aspect Ratio Container */}
-                  <div className="relative rounded-xl overflow-hidden mb-2.5 h-32 sm:h-34 bg-slate-100 flex-shrink-0">
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="w-full h-full object-cover object-center transition-transform duration-500 hover:scale-105"
-                    />
-                    {"source" in item && item.source && (
-                      <span className="absolute bottom-1.5 right-1.5 px-2 py-0.5 text-[9px] font-extrabold bg-slate-950/80 text-white rounded-md backdrop-blur-xs shadow-xs">
-                        {item.source}
-                      </span>
-                    )}
-                  </div>
+          : displayItems.map((item) => {
+              const source = "source" in item ? (item as GeneralNewsItem).source : undefined;
+              return (
+                <div
+                  key={item.id}
+                  className={`bg-white rounded-2xl p-3 sm:p-3.5 border shadow-xs flex flex-col justify-between select-none transition-all duration-300 h-[305px] sm:h-[315px] ${
+                    mode === "campus"
+                      ? "border-slate-200/80 hover:border-blue-300 hover:shadow-md"
+                      : "border-purple-200/80 hover:border-purple-300 hover:shadow-md"
+                  }`}
+                >
+                  <div className="flex flex-col flex-1 justify-start">
+                    {/* Fixed Uniform Image Aspect Ratio Container */}
+                    <div className="relative rounded-xl overflow-hidden mb-2.5 h-32 sm:h-34 bg-slate-100 flex-shrink-0">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="w-full h-full object-cover object-center transition-transform duration-500 hover:scale-105"
+                      />
+                      {source && (
+                        <span className="absolute bottom-1.5 right-1.5 px-2 py-0.5 text-[9px] font-extrabold bg-slate-950/80 text-white rounded-md backdrop-blur-xs shadow-xs">
+                          {source}
+                        </span>
+                      )}
+                    </div>
 
-                  {/* Uniform Tag Row */}
-                  <div className="mb-1.5 h-5 flex items-center justify-between flex-shrink-0">
-                    <span
-                      className={`inline-block px-2 py-0.5 text-[10px] font-extrabold rounded-md border tracking-wider uppercase ${getTagColorClass(
-                        item.tagColor
-                      )}`}
-                    >
-                      {item.tag}
-                    </span>
-                  </div>
+                    {/* Uniform Tag Row */}
+                    <div className="mb-1.5 h-5 flex items-center justify-between flex-shrink-0">
+                      <span
+                        className={`inline-block px-2 py-0.5 text-[10px] font-extrabold rounded-md border tracking-wider uppercase ${getTagColorClass(
+                          item.tagColor
+                        )}`}
+                      >
+                        {item.tag}
+                      </span>
+                    </div>
 
                   {/* Fixed Height Uniform Title */}
                   <div className="h-10 sm:h-11 mb-1 flex items-start overflow-hidden flex-shrink-0">
@@ -208,7 +210,8 @@ export const NewsSection: React.FC<NewsSectionProps> = ({
                   </span>
                 </div>
               </div>
-            ))}
+            );
+          })}
       </div>
     </section>
   );
