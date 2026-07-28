@@ -49,7 +49,7 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <h3 className="text-base sm:text-lg font-extrabold text-blue-950 tracking-tight uppercase">
-            ACHIEVEMENTS SHOWCASE
+            ACHIEVEMENTS
           </h3>
         </div>
       </div>
