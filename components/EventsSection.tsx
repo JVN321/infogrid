@@ -200,13 +200,13 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
             {/* Event Link QR Code Overlay Box */}
             {activeFeatured.ctaLink && activeFeatured.ctaLink !== "#" && (
-              <div className="flex flex-col items-center bg-white/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200 shadow-lg group-hover:scale-105 transition-transform">
+              <div className="flex flex-col items-center bg-white/95 backdrop-blur-md p-1 rounded-lg shadow-lg group-hover:scale-105 transition-transform overflow-hidden">
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                  src={`https://api.qrserver.com/v1/create-qr-code/?margin=1&size=150x150&data=${encodeURIComponent(
                     activeFeatured.ctaLink
                   )}`}
                   alt="Scan QR for Event"
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-contain bg-white p-0.5"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-md object-contain bg-white"
                 />
               </div>
             )}
