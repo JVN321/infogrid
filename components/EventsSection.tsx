@@ -48,8 +48,9 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
     ...finishedEvents.slice(0, maxFinishedEvents),
   ];
 
-  // Pick top active event from filtered list for featured card, ensuring real event image & details are shown
-  const primaryEvent = filteredUpcoming[0];
+  // Pick active event for featured card based on currentPage so it cycles dynamically with pagination/slideshow
+  const featuredIndex = (currentPage * ITEMS_PER_PAGE) % (filteredUpcoming.length || 1);
+  const primaryEvent = filteredUpcoming[featuredIndex] || filteredUpcoming[0];
   const activeFeatured = primaryEvent
     ? {
         title: primaryEvent.title,
@@ -178,7 +179,9 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
       {/* 2 Column Split Layout - Constrained Height for 9:16 Screens */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
         {/* Left Column: Featured Event Card Banner */}
-        <div className="lg:col-span-5 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-3.5 sm:p-5 min-h-[200px] sm:min-h-[230px] border border-blue-900/30 select-none group bg-slate-900">
+        <div className={`lg:col-span-5 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-3.5 sm:p-5 min-h-[200px] sm:min-h-[230px] border border-blue-900/30 select-none group bg-slate-900 transition-all duration-300 transform ${
+          isFading ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"
+        }`}>
           <img
             src={activeFeatured.image}
             alt={activeFeatured.title}
@@ -227,18 +230,6 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                 <MapPin className="w-3 h-3 text-blue-400" />
                 <span className="line-clamp-1">{activeFeatured.venue}</span>
               </div>
-            </div>
-
-            <div className="pt-1">
-              <a
-                href={activeFeatured.ctaLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition-colors"
-              >
-                <span>{activeFeatured.ctaText || "View on Grid"}</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
             </div>
           </div>
         </div>
