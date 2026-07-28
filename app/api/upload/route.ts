@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { uploadToR2 } from "@/lib/r2";
+import { uploadToGCP } from "@/lib/gcpStorage";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,14 +14,14 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Try Cloudflare R2 Upload
+    // Try Google Cloud Storage Upload
     try {
-      const url = await uploadToR2(buffer, file.name, file.type);
+      const url = await uploadToGCP(buffer, file.name, file.type);
       return NextResponse.json({ url, success: true });
-    } catch (r2Error: any) {
-      console.warn("Cloudflare R2 Upload Warning:", r2Error.message);
+    } catch (gcpError: any) {
+      console.warn("GCP Storage Upload Warning:", gcpError.message);
       
-      // Fallback preview mode if R2 keys are not configured yet
+      // Fallback preview mode if GCP credentials are not configured yet
       // Return a base64 data URL preview for local testing environment
       const base64 = buffer.toString("base64");
       const dataUrl = `data:${file.type};base64,${base64}`;
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
         url: dataUrl,
         success: true,
         isFallback: true,
-        message: "Uploaded as preview (Set CLOUDFLARE_R2_* env vars in .env to upload to R2 Bucket directly).",
+        message: "Uploaded as preview (Set GCP_* env vars in .env to upload to GCP Storage Bucket directly).",
       });
     }
   } catch (error: any) {
