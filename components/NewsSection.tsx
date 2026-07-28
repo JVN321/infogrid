@@ -143,11 +143,11 @@ export const NewsSection: React.FC<NewsSectionProps> = ({
                 <div className="h-4 w-1/3 bg-slate-200 rounded"></div>
               </div>
             ))
-          : displayItems.map((item) => {
+          : displayItems.map((item, idx) => {
               const source = "source" in item ? (item as GeneralNewsItem).source : undefined;
               return (
                 <div
-                  key={item.id}
+                  key={`${item.id}-${idx}`}
                   className={`bg-white rounded-2xl p-3 sm:p-3.5 border shadow-xs flex flex-col justify-between select-none transition-all duration-300 h-[305px] sm:h-[315px] ${
                     mode === "campus"
                       ? "border-slate-200/80 hover:border-blue-300 hover:shadow-md"

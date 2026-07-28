@@ -70,11 +70,11 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
                 <div className="h-3 w-full bg-slate-200 rounded mb-1"></div>
               </div>
             ))
-          : achievements.map((item) => {
+          : achievements.map((item, idx) => {
               const badge = getBadgeIcon(item.badgeType);
               return (
                 <div
-                  key={item.id}
+                  key={`${item.id}-${idx}`}
                   className="bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between select-none"
                 >
                   <div>
