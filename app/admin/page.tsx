@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { NewsItem, AchievementItem, defaultSkeletonData } from "@/data/skeletonData";
+import { NewsItem, GeneralNewsItem, AchievementItem, defaultSkeletonData } from "@/data/skeletonData";
 import {
   Newspaper,
   Trophy,
@@ -24,10 +24,13 @@ import {
   RefreshCw,
   LogOut,
   Lock,
+  Globe,
+  Search,
+  Download,
 } from "lucide-react";
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<"news" | "achievements">("news");
+  const [activeTab, setActiveTab] = useState<"news" | "generalNews" | "achievements">("news");
 
   // Auth States
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -38,11 +41,17 @@ export default function AdminPage() {
 
   // Data States
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
+  const [generalNewsList, setGeneralNewsList] = useState<GeneralNewsItem[]>([]);
   const [achievementsList, setAchievementsList] = useState<AchievementItem[]>([]);
   const [isDbConnected, setIsDbConnected] = useState<boolean | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
-  // Modals & Form states
+  // Auto-Fetch & Search News Tool States
+  const [searchQuery, setSearchQuery] = useState("technology");
+  const [fetchedNews, setFetchedNews] = useState<any[]>([]);
+  const [fetchingNews, setFetchingNews] = useState(false);
+
+  // Form states for Campus News
   const [isEditingNews, setIsEditingNews] = useState<boolean>(false);
   const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
   const [newsForm, setNewsForm] = useState<{
@@ -61,6 +70,28 @@ export default function AdminPage() {
     image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=600&q=80",
   });
 
+  // Form states for General News
+  const [isEditingGenNews, setIsEditingGenNews] = useState<boolean>(false);
+  const [editingGenNewsId, setEditingGenNewsId] = useState<string | null>(null);
+  const [genNewsForm, setGenNewsForm] = useState<{
+    tag: string;
+    tagColor: GeneralNewsItem["tagColor"];
+    title: string;
+    description: string;
+    date: string;
+    image: string;
+    source: string;
+  }>({
+    tag: "GLOBAL",
+    tagColor: "purple",
+    title: "",
+    description: "",
+    date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+    image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&q=80",
+    source: "Global News",
+  });
+
+  // Form states for Achievements
   const [isEditingAchievement, setIsEditingAchievement] = useState<boolean>(false);
   const [editingAchievementId, setEditingAchievementId] = useState<string | null>(null);
   const [achievementForm, setAchievementForm] = useState<{
@@ -88,6 +119,7 @@ export default function AdminPage() {
         if (data.authenticated) {
           setIsAuthenticated(true);
           fetchInitialData();
+          autoFetchExternalNews("technology");
         } else {
           setIsAuthenticated(false);
         }
@@ -112,6 +144,7 @@ export default function AdminPage() {
       if (res.ok && data.success) {
         setIsAuthenticated(true);
         fetchInitialData();
+        autoFetchExternalNews("technology");
       } else {
         setAuthError(data.error || "Invalid username or password");
       }
@@ -137,17 +170,20 @@ export default function AdminPage() {
   const fetchInitialData = async () => {
     // 1. Try loading from Supabase Prisma API
     try {
-      const [newsRes, achRes] = await Promise.all([
+      const [newsRes, genNewsRes, achRes] = await Promise.all([
         fetch("/api/news"),
+        fetch("/api/general-news"),
         fetch("/api/achievements"),
       ]);
 
-      if (newsRes.ok && achRes.ok) {
+      if (newsRes.ok && genNewsRes.ok && achRes.ok) {
         const newsData = await newsRes.json();
+        const genNewsData = await genNewsRes.json();
         const achData = await achRes.json();
 
-        if (Array.isArray(newsData) && Array.isArray(achData)) {
+        if (Array.isArray(newsData) && Array.isArray(genNewsData) && Array.isArray(achData)) {
           setNewsList(newsData.length > 0 ? newsData : defaultSkeletonData.news);
+          setGeneralNewsList(genNewsData.length > 0 ? genNewsData : defaultSkeletonData.generalNews);
           setAchievementsList(achData.length > 0 ? achData : defaultSkeletonData.achievements);
           setIsDbConnected(true);
           return;
@@ -164,23 +200,47 @@ export default function AdminPage() {
       try {
         const parsed = JSON.parse(local);
         setNewsList(parsed.news || defaultSkeletonData.news);
+        setGeneralNewsList(parsed.generalNews || defaultSkeletonData.generalNews);
         setAchievementsList(parsed.achievements || defaultSkeletonData.achievements);
       } catch (e) {
         setNewsList(defaultSkeletonData.news);
+        setGeneralNewsList(defaultSkeletonData.generalNews);
         setAchievementsList(defaultSkeletonData.achievements);
       }
     } else {
       setNewsList(defaultSkeletonData.news);
+      setGeneralNewsList(defaultSkeletonData.generalNews);
       setAchievementsList(defaultSkeletonData.achievements);
     }
   };
 
+  // Auto-Fetch External News from News API endpoint
+  const autoFetchExternalNews = async (query: string) => {
+    setFetchingNews(true);
+    try {
+      const res = await fetch(`/api/fetch-news?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (data.articles) {
+        setFetchedNews(data.articles);
+      }
+    } catch (err) {
+      console.error("Auto fetch news error:", err);
+    } finally {
+      setFetchingNews(false);
+    }
+  };
+
   // Sync state changes to LocalStorage for instant preview sync
-  const syncToLocalStorage = (updatedNews: NewsItem[], updatedAch: AchievementItem[]) => {
+  const syncToLocalStorage = (
+    updatedNews: NewsItem[],
+    updatedGenNews: GeneralNewsItem[],
+    updatedAch: AchievementItem[]
+  ) => {
     try {
       const existing = localStorage.getItem("infogrid_portal_data");
       const dataObj = existing ? JSON.parse(existing) : defaultSkeletonData;
       dataObj.news = updatedNews;
+      dataObj.generalNews = updatedGenNews;
       dataObj.achievements = updatedAch;
       localStorage.setItem("infogrid_portal_data", JSON.stringify(dataObj));
     } catch (err) {
@@ -196,7 +256,7 @@ export default function AdminPage() {
   // Upload image handler via Cloudflare R2 API
   const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    target: "news" | "achievement"
+    target: "news" | "generalNews" | "achievement"
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -215,6 +275,8 @@ export default function AdminPage() {
       if (res.ok && data.url) {
         if (target === "news") {
           setNewsForm((prev) => ({ ...prev, image: data.url }));
+        } else if (target === "generalNews") {
+          setGenNewsForm((prev) => ({ ...prev, image: data.url }));
         } else {
           setAchievementForm((prev) => ({ ...prev, image: data.url }));
         }
@@ -234,7 +296,7 @@ export default function AdminPage() {
     }
   };
 
-  // NEWS HANDLERS
+  // CAMPUS NEWS HANDLERS
   const handleSaveNews = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newsForm.title || !newsForm.description) {
@@ -245,7 +307,6 @@ export default function AdminPage() {
     let updatedList: NewsItem[] = [];
 
     if (isEditingNews && editingNewsId) {
-      // Update news
       updatedList = newsList.map((item) =>
         item.id === editingNewsId ? { ...item, ...newsForm } : item
       );
@@ -263,7 +324,6 @@ export default function AdminPage() {
       }
       showNotify("Campus News item updated successfully!");
     } else {
-      // Add new news
       const newItem: NewsItem = {
         id: `news-${Date.now()}`,
         ...newsForm,
@@ -287,7 +347,7 @@ export default function AdminPage() {
     }
 
     setNewsList(updatedList);
-    syncToLocalStorage(updatedList, achievementsList);
+    syncToLocalStorage(updatedList, generalNewsList, achievementsList);
     resetNewsForm();
   };
 
@@ -306,7 +366,7 @@ export default function AdminPage() {
   };
 
   const handleDeleteNews = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this news item?")) return;
+    if (!confirm("Are you sure you want to delete this campus news item?")) return;
     const updatedList = newsList.filter((item) => item.id !== id);
     setNewsList(updatedList);
 
@@ -317,8 +377,8 @@ export default function AdminPage() {
         console.error("Prisma delete error:", e);
       }
     }
-    syncToLocalStorage(updatedList, achievementsList);
-    showNotify("News item deleted", "info");
+    syncToLocalStorage(updatedList, generalNewsList, achievementsList);
+    showNotify("Campus news item deleted", "info");
   };
 
   const resetNewsForm = () => {
@@ -334,6 +394,137 @@ export default function AdminPage() {
     });
   };
 
+  // GENERAL NEWS HANDLERS
+  const handleSaveGenNews = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!genNewsForm.title || !genNewsForm.description) {
+      showNotify("Please fill in title and description", "error");
+      return;
+    }
+
+    let updatedList: GeneralNewsItem[] = [];
+
+    if (isEditingGenNews && editingGenNewsId) {
+      updatedList = generalNewsList.map((item) =>
+        item.id === editingGenNewsId ? { ...item, ...genNewsForm } : item
+      );
+
+      if (isDbConnected) {
+        try {
+          await fetch("/api/general-news", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: editingGenNewsId, ...genNewsForm }),
+          });
+        } catch (e) {
+          console.error("Prisma update error:", e);
+        }
+      }
+      showNotify("General News item updated!");
+    } else {
+      const newItem: GeneralNewsItem = {
+        id: `gen-${Date.now()}`,
+        ...genNewsForm,
+      };
+      updatedList = [newItem, ...generalNewsList];
+
+      if (isDbConnected) {
+        try {
+          const res = await fetch("/api/general-news", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(genNewsForm),
+          });
+          const created = await res.json();
+          if (created.id) newItem.id = created.id;
+        } catch (e) {
+          console.error("Prisma create error:", e);
+        }
+      }
+      showNotify("New General News item added!");
+    }
+
+    setGeneralNewsList(updatedList);
+    syncToLocalStorage(newsList, updatedList, achievementsList);
+    resetGenNewsForm();
+  };
+
+  const handleImportFetchedArticle = async (article: any) => {
+    const newItem: GeneralNewsItem = {
+      id: `gen-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      tag: article.tag || "GLOBAL",
+      tagColor: article.tagColor || "purple",
+      title: article.title,
+      description: article.description,
+      date: article.date || new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      image: article.image,
+      source: article.source || "News API",
+    };
+
+    const updatedList = [newItem, ...generalNewsList];
+    setGeneralNewsList(updatedList);
+
+    if (isDbConnected) {
+      try {
+        await fetch("/api/general-news", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newItem),
+        });
+      } catch (e) {
+        console.error("Import create error:", e);
+      }
+    }
+
+    syncToLocalStorage(newsList, updatedList, achievementsList);
+    showNotify(`Imported "${article.title.substring(0, 30)}..." into General News!`);
+  };
+
+  const handleEditGenNews = (item: GeneralNewsItem) => {
+    setIsEditingGenNews(true);
+    setEditingGenNewsId(item.id);
+    setGenNewsForm({
+      tag: item.tag,
+      tagColor: item.tagColor,
+      title: item.title,
+      description: item.description,
+      date: item.date,
+      image: item.image,
+      source: item.source || "Global News",
+    });
+    window.scrollTo({ top: 300, behavior: "smooth" });
+  };
+
+  const handleDeleteGenNews = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this general news item?")) return;
+    const updatedList = generalNewsList.filter((item) => item.id !== id);
+    setGeneralNewsList(updatedList);
+
+    if (isDbConnected) {
+      try {
+        await fetch(`/api/general-news?id=${id}`, { method: "DELETE" });
+      } catch (e) {
+        console.error("Prisma delete error:", e);
+      }
+    }
+    syncToLocalStorage(newsList, updatedList, achievementsList);
+    showNotify("General news item deleted", "info");
+  };
+
+  const resetGenNewsForm = () => {
+    setIsEditingGenNews(false);
+    setEditingGenNewsId(null);
+    setGenNewsForm({
+      tag: "GLOBAL",
+      tagColor: "purple",
+      title: "",
+      description: "",
+      date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&q=80",
+      source: "Global News",
+    });
+  };
+
   // ACHIEVEMENTS HANDLERS
   const handleSaveAchievement = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -345,7 +536,6 @@ export default function AdminPage() {
     let updatedList: AchievementItem[] = [];
 
     if (isEditingAchievement && editingAchievementId) {
-      // Update achievement
       updatedList = achievementsList.map((item) =>
         item.id === editingAchievementId ? { ...item, ...achievementForm } : item
       );
@@ -363,7 +553,6 @@ export default function AdminPage() {
       }
       showNotify("Achievement showcase item updated!");
     } else {
-      // Add new achievement
       const newItem: AchievementItem = {
         id: `ach-${Date.now()}`,
         ...achievementForm,
@@ -387,7 +576,7 @@ export default function AdminPage() {
     }
 
     setAchievementsList(updatedList);
-    syncToLocalStorage(newsList, updatedList);
+    syncToLocalStorage(newsList, generalNewsList, updatedList);
     resetAchievementForm();
   };
 
@@ -416,7 +605,7 @@ export default function AdminPage() {
         console.error("Prisma delete error:", e);
       }
     }
-    syncToLocalStorage(newsList, updatedList);
+    syncToLocalStorage(newsList, generalNewsList, updatedList);
     showNotify("Achievement item deleted", "info");
   };
 
@@ -435,8 +624,13 @@ export default function AdminPage() {
   const handleResetAllDefaults = () => {
     if (confirm("Reset all news and achievements to default initial dataset?")) {
       setNewsList(defaultSkeletonData.news);
+      setGeneralNewsList(defaultSkeletonData.generalNews);
       setAchievementsList(defaultSkeletonData.achievements);
-      syncToLocalStorage(defaultSkeletonData.news, defaultSkeletonData.achievements);
+      syncToLocalStorage(
+        defaultSkeletonData.news,
+        defaultSkeletonData.generalNews,
+        defaultSkeletonData.achievements
+      );
       showNotify("Reset to default dataset successfully!");
     }
   };
@@ -583,8 +777,8 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Info Status Banner: Cloudflare R2 & Supabase Prisma Status */}
-      <div className="max-w-7xl mx-auto mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Info Status Banner */}
+      <div className="max-w-7xl mx-auto mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-start gap-3">
           <div className="p-2.5 bg-blue-500/10 text-blue-400 rounded-xl">
             <Newspaper className="w-5 h-5" />
@@ -592,6 +786,16 @@ export default function AdminPage() {
           <div>
             <div className="text-slate-400 text-xs font-medium">Campus News Count</div>
             <div className="text-xl font-extrabold text-white mt-0.5">{newsList.length} Items</div>
+          </div>
+        </div>
+
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-start gap-3">
+          <div className="p-2.5 bg-purple-500/10 text-purple-400 rounded-xl">
+            <Globe className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-slate-400 text-xs font-medium">General News Count</div>
+            <div className="text-xl font-extrabold text-white mt-0.5">{generalNewsList.length} Items</div>
           </div>
         </div>
 
@@ -614,25 +818,15 @@ export default function AdminPage() {
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               <span className="text-xs font-bold text-slate-200">
-                Cloudflare R2 Bucket & Prisma Ready
+                R2 & News API Enabled
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Skipped Events Notice */}
-      <div className="max-w-7xl mx-auto mb-6 p-4 bg-blue-950/40 border border-blue-800/60 rounded-2xl flex items-center justify-between text-xs text-blue-200">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-400 flex-shrink-0" />
-          <span>
-            <strong>Notice:</strong> Campus Events management is currently skipped for now as requested. Focus is on Campus News & Achievements Showcase media management.
-          </span>
-        </div>
-      </div>
-
       {/* Tabs Switcher */}
-      <div className="max-w-7xl mx-auto mb-6 flex border-b border-slate-800 gap-2">
+      <div className="max-w-7xl mx-auto mb-6 flex flex-wrap border-b border-slate-800 gap-2">
         <button
           onClick={() => setActiveTab("news")}
           className={`flex items-center gap-2 px-5 py-3 font-bold text-sm border-b-2 transition-all ${
@@ -642,8 +836,21 @@ export default function AdminPage() {
           }`}
         >
           <Newspaper className="w-4 h-4" />
-          <span>Campus News Management ({newsList.length})</span>
+          <span>Campus News ({newsList.length})</span>
         </button>
+
+        <button
+          onClick={() => setActiveTab("generalNews")}
+          className={`flex items-center gap-2 px-5 py-3 font-bold text-sm border-b-2 transition-all ${
+            activeTab === "generalNews"
+              ? "border-purple-500 text-purple-400 bg-purple-500/5 rounded-t-xl"
+              : "border-transparent text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <Globe className="w-4 h-4" />
+          <span>General News & Auto-Fetch ({generalNewsList.length})</span>
+        </button>
+
         <button
           onClick={() => setActiveTab("achievements")}
           className={`flex items-center gap-2 px-5 py-3 font-bold text-sm border-b-2 transition-all ${
@@ -653,7 +860,7 @@ export default function AdminPage() {
           }`}
         >
           <Trophy className="w-4 h-4" />
-          <span>Achievements Showcase Management ({achievementsList.length})</span>
+          <span>Achievements ({achievementsList.length})</span>
         </button>
       </div>
 
@@ -662,6 +869,7 @@ export default function AdminPage() {
         {/* LEFT COLUMN: Add / Edit Form */}
         <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl h-fit">
           {activeTab === "news" ? (
+            /* CAMPUS NEWS FORM */
             <form onSubmit={handleSaveNews} className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 className="font-extrabold text-base text-white flex items-center gap-2">
@@ -679,7 +887,6 @@ export default function AdminPage() {
                 )}
               </div>
 
-              {/* Title */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Title *</label>
                 <input
@@ -692,23 +899,21 @@ export default function AdminPage() {
                 />
               </div>
 
-              {/* Description */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Description *</label>
                 <textarea
                   required
                   rows={3}
-                  placeholder="Enter news summary or details..."
+                  placeholder="Enter news summary..."
                   value={newsForm.description}
                   onChange={(e) => setNewsForm({ ...newsForm, description: e.target.value })}
                   className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 ></textarea>
               </div>
 
-              {/* Tag & Color Grid */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Category Tag</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Tag</label>
                   <input
                     type="text"
                     placeholder="e.g. NEW, PLACEMENT"
@@ -735,7 +940,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Date */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Date</label>
                 <input
@@ -747,7 +951,6 @@ export default function AdminPage() {
                 />
               </div>
 
-              {/* Image URL & Upload via Cloudflare R2 */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-slate-300">
                   Image (Cloudflare R2 Bucket / Upload)
@@ -773,14 +976,9 @@ export default function AdminPage() {
                   </label>
                 </div>
 
-                {/* Preview Image */}
                 {newsForm.image && (
                   <div className="relative rounded-xl overflow-hidden h-28 border border-slate-800 bg-slate-950 mt-2">
-                    <img
-                      src={newsForm.image}
-                      alt="News Preview"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={newsForm.image} alt="News Preview" className="w-full h-full object-cover" />
                   </div>
                 )}
               </div>
@@ -790,7 +988,142 @@ export default function AdminPage() {
                 className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
               >
                 <Check className="w-4 h-4" />
-                <span>{isEditingNews ? "Save Changes" : "Add News Item"}</span>
+                <span>{isEditingNews ? "Save Changes" : "Add Campus News Item"}</span>
+              </button>
+            </form>
+          ) : activeTab === "generalNews" ? (
+            /* GENERAL NEWS FORM */
+            <form onSubmit={handleSaveGenNews} className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+                  {isEditingGenNews ? <Edit className="w-4 h-4 text-purple-400" /> : <Plus className="w-4 h-4 text-purple-400" />}
+                  <span>{isEditingGenNews ? "Edit General News Item" : "Add New General News Item"}</span>
+                </h3>
+                {isEditingGenNews && (
+                  <button
+                    type="button"
+                    onClick={resetGenNewsForm}
+                    className="text-xs text-rose-400 hover:underline font-semibold"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Breakthrough in Quantum Computing Architecture"
+                  value={genNewsForm.title}
+                  onChange={(e) => setGenNewsForm({ ...genNewsForm, title: e.target.value })}
+                  className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Description *</label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Enter global news details..."
+                  value={genNewsForm.description}
+                  onChange={(e) => setGenNewsForm({ ...genNewsForm, description: e.target.value })}
+                  className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                ></textarea>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Category Tag</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. GLOBAL TECH, AI RESEARCH"
+                    value={genNewsForm.tag}
+                    onChange={(e) => setGenNewsForm({ ...genNewsForm, tag: e.target.value })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Tag Color</label>
+                  <select
+                    value={genNewsForm.tagColor}
+                    onChange={(e) =>
+                      setGenNewsForm({ ...genNewsForm, tagColor: e.target.value as GeneralNewsItem["tagColor"] })
+                    }
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  >
+                    <option value="purple">Purple</option>
+                    <option value="blue">Blue</option>
+                    <option value="green">Emerald Green</option>
+                    <option value="darkgreen">Dark Green</option>
+                    <option value="orange">Orange / Amber</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Source / Publication</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. TechCrunch, Nature"
+                    value={genNewsForm.source}
+                    onChange={(e) => setGenNewsForm({ ...genNewsForm, source: e.target.value })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Date</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 28 May 2025"
+                    value={genNewsForm.date}
+                    onChange={(e) => setGenNewsForm({ ...genNewsForm, date: e.target.value })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-300">
+                  Image (Cloudflare R2 Bucket / Upload)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Image URL"
+                    value={genNewsForm.image}
+                    onChange={(e) => setGenNewsForm({ ...genNewsForm, image: e.target.value })}
+                    className="flex-1 text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                  <label className="flex items-center gap-1.5 px-3 py-3 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl cursor-pointer transition-all flex-shrink-0">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{uploadingImage ? "Uploading..." : "Upload File"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, "generalNews")}
+                      disabled={uploadingImage}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {genNewsForm.image && (
+                  <div className="relative rounded-xl overflow-hidden h-28 border border-slate-800 bg-slate-950 mt-2">
+                    <img src={genNewsForm.image} alt="General News Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+              >
+                <Check className="w-4 h-4" />
+                <span>{isEditingGenNews ? "Save Changes" : "Add General News Item"}</span>
               </button>
             </form>
           ) : (
@@ -818,7 +1151,6 @@ export default function AdminPage() {
                 )}
               </div>
 
-              {/* Title */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Title *</label>
                 <input
@@ -833,7 +1165,6 @@ export default function AdminPage() {
                 />
               </div>
 
-              {/* Description */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Description *</label>
                 <textarea
@@ -848,7 +1179,6 @@ export default function AdminPage() {
                 ></textarea>
               </div>
 
-              {/* Badge Type & Date */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">Badge Type</label>
@@ -882,7 +1212,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Image URL & Upload via Cloudflare R2 */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-slate-300">
                   Image (Cloudflare R2 Bucket / Upload)
@@ -910,7 +1239,6 @@ export default function AdminPage() {
                   </label>
                 </div>
 
-                {/* Preview Image */}
                 {achievementForm.image && (
                   <div className="relative rounded-xl overflow-hidden h-28 border border-slate-800 bg-slate-950 mt-2">
                     <img
@@ -933,10 +1261,10 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* RIGHT COLUMN: Items List Table/Cards View */}
-        <div className="lg:col-span-7 space-y-4">
+        {/* RIGHT COLUMN: List Views & Auto-Fetch News Tool */}
+        <div className="lg:col-span-7 space-y-6">
           {activeTab === "news" ? (
-            /* NEWS ITEMS LIST */
+            /* CAMPUS NEWS LIST */
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
                 <h3 className="font-extrabold text-base text-white flex items-center gap-2">
@@ -996,6 +1324,152 @@ export default function AdminPage() {
                   ))}
                 </div>
               )}
+            </div>
+          ) : activeTab === "generalNews" ? (
+            /* GENERAL NEWS MANAGEMENT & AUTO-FETCH TOOL */
+            <div className="space-y-6">
+              {/* SEARCH & AUTO-FETCH NEWS API PANEL */}
+              <div className="bg-slate-900 border border-purple-900/40 rounded-3xl p-6 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-purple-400" />
+                    <div>
+                      <h3 className="font-extrabold text-base text-white">Search & Auto-Fetch News</h3>
+                      <p className="text-xs text-slate-400">Discover and 1-click import global news articles</p>
+                    </div>
+                  </div>
+
+                  {/* Search Bar */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1 sm:w-48">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Topic (e.g. AI, Space, Science)..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && autoFetchExternalNews(searchQuery)}
+                        className="w-full text-xs pl-8 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      onClick={() => autoFetchExternalNews(searchQuery)}
+                      disabled={fetchingNews}
+                      className="px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 flex-shrink-0"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${fetchingNews ? "animate-spin" : ""}`} />
+                      <span>{fetchingNews ? "Fetching..." : "Fetch News"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Fetched News Results Grid */}
+                {fetchedNews.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                      Fetched Articles for "{searchQuery}" ({fetchedNews.length})
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {fetchedNews.map((art) => (
+                        <div
+                          key={art.id}
+                          className="bg-slate-950 border border-slate-800 rounded-2xl p-3 flex flex-col justify-between"
+                        >
+                          <div>
+                            <img
+                              src={art.image}
+                              alt={art.title}
+                              className="w-full h-24 object-cover rounded-xl mb-2"
+                            />
+                            <div className="flex items-center justify-between text-[10px] text-purple-400 font-bold mb-1">
+                              <span>{art.tag}</span>
+                              <span className="text-slate-500">{art.source}</span>
+                            </div>
+                            <h5 className="font-bold text-xs text-white leading-snug mb-1 line-clamp-2">
+                              {art.title}
+                            </h5>
+                            <p className="text-[11px] text-slate-400 line-clamp-2 mb-2">
+                              {art.description}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleImportFetchedArticle(art)}
+                            className="w-full py-1.5 bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/30 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Import to General News</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* EXISTING GENERAL NEWS LIST */}
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+                  <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-purple-400" />
+                    <span>Active General News Items ({generalNewsList.length})</span>
+                  </h3>
+                </div>
+
+                {generalNewsList.length === 0 ? (
+                  <div className="text-center py-10 text-slate-500 text-xs">
+                    No general news items added yet. Use the form on the left or auto-fetch above to add items!
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {generalNewsList.map((item) => (
+                      <div
+                        key={item.id}
+                        className="bg-slate-950 border border-slate-800/80 rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-slate-700 transition-all"
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            className="w-16 h-16 rounded-xl object-cover border border-slate-800 flex-shrink-0"
+                          />
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 uppercase">
+                                {item.tag}
+                              </span>
+                              <span className="text-[11px] text-slate-400">{item.date}</span>
+                              {item.source && (
+                                <span className="text-[10px] text-slate-500 font-semibold">• {item.source}</span>
+                              )}
+                            </div>
+                            <h4 className="font-bold text-sm text-white">{item.title}</h4>
+                            <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">
+                              {item.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end sm:self-center">
+                          <button
+                            onClick={() => handleEditGenNews(item)}
+                            className="p-2 bg-slate-900 hover:bg-slate-800 text-purple-400 rounded-lg border border-slate-800 transition-colors"
+                            title="Edit Item"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteGenNews(item.id)}
+                            className="p-2 bg-slate-900 hover:bg-rose-950/50 text-rose-400 rounded-lg border border-slate-800 transition-colors"
+                            title="Delete Item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             /* ACHIEVEMENTS ITEMS LIST */

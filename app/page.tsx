@@ -30,17 +30,22 @@ export default function Home() {
     // 2. Fetch live data from Supabase DB via Prisma API if available
     async function syncFromApi() {
       try {
-        const [newsRes, achRes] = await Promise.all([
+        const [newsRes, genNewsRes, achRes] = await Promise.all([
           fetch("/api/news"),
+          fetch("/api/general-news"),
           fetch("/api/achievements"),
         ]);
 
-        if (newsRes.ok && achRes.ok) {
+        if (newsRes.ok && genNewsRes.ok && achRes.ok) {
           const newsData = await newsRes.json();
+          const genNewsData = await genNewsRes.json();
           const achData = await achRes.json();
 
           if (Array.isArray(newsData) && newsData.length > 0) {
             setData((prev) => ({ ...prev, news: newsData }));
+          }
+          if (Array.isArray(genNewsData) && genNewsData.length > 0) {
+            setData((prev) => ({ ...prev, generalNews: genNewsData }));
           }
           if (Array.isArray(achData) && achData.length > 0) {
             setData((prev) => ({ ...prev, achievements: achData }));
@@ -92,8 +97,12 @@ export default function Home() {
           {/* Welcome / Hero Banner Slider */}
           <HeroSection slides={data.heroSlides} isSkeleton={isSkeleton} />
 
-          {/* Campus News Section */}
-          <NewsSection news={data.news} isSkeleton={isSkeleton} />
+          {/* Campus & General News Section */}
+          <NewsSection
+            news={data.news}
+            generalNews={data.generalNews}
+            isSkeleton={isSkeleton}
+          />
 
           {/* Campus Events Section */}
           <EventsSection

@@ -33,6 +33,18 @@ export interface NewsItem {
   image: string;
 }
 
+export interface GeneralNewsItem {
+  id: string;
+  tag: string;
+  tagColor: 'blue' | 'green' | 'darkgreen' | 'orange' | 'purple';
+  title: string;
+  description: string;
+  date: string;
+  image: string;
+  source?: string;
+  url?: string;
+}
+
 export interface FeaturedEvent {
   badge: string;
   title: string;
@@ -69,6 +81,7 @@ export interface PortalData {
   header: HeaderInfo;
   heroSlides: HeroSlide[];
   news: NewsItem[];
+  generalNews: GeneralNewsItem[];
   featuredEvent: FeaturedEvent;
   upcomingEvents: UpcomingEvent[];
   achievements: AchievementItem[];
@@ -171,6 +184,48 @@ export const defaultSkeletonData: PortalData = {
       description: "An insightful session on emerging cybersecurity trends and career opportunities.",
       date: "24 May 2025",
       image: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=600&q=80",
+    },
+  ],
+  generalNews: [
+    {
+      id: "gen-1",
+      tag: "GLOBAL TECH",
+      tagColor: "purple",
+      title: "Breakthrough in Quantum Computing Architecture",
+      description: "Researchers announce a novel error-correction method for quantum processing units.",
+      date: "28 May 2025",
+      image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&q=80",
+      source: "Tech Insights",
+    },
+    {
+      id: "gen-2",
+      tag: "AI RESEARCH",
+      tagColor: "blue",
+      title: "Next-Gen Generative AI Models for Education",
+      description: "Global universities adopt personalized AI tutoring systems for adaptive learning.",
+      date: "27 May 2025",
+      image: "https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=600&q=80",
+      source: "AI World Journal",
+    },
+    {
+      id: "gen-3",
+      tag: "ENERGY",
+      tagColor: "green",
+      title: "Next-Gen Solar Cell Reaches 34% Efficiency",
+      description: "Perovskite-silicon tandem solar cells set a new world record for clean energy harvest.",
+      date: "25 May 2025",
+      image: "https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=600&q=80",
+      source: "CleanTech Daily",
+    },
+    {
+      id: "gen-4",
+      tag: "EXPLORATION",
+      tagColor: "orange",
+      title: "Space Mission Discovers Atmospheric Water Vapor",
+      description: "Deep space observatory captures unprecedented spectra from exoplanet system.",
+      date: "23 May 2025",
+      image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80",
+      source: "Space Science News",
     },
   ],
   featuredEvent: {
