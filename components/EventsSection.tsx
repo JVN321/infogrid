@@ -2,7 +2,7 @@
 
 import React from "react";
 import { FeaturedEvent, UpcomingEvent } from "@/data/skeletonData";
-import { Calendar, Clock, MapPin, Sparkles } from "lucide-react";
+import { Calendar, Clock, MapPin } from "lucide-react";
 
 interface EventsSectionProps {
   featured: FeaturedEvent;
@@ -181,12 +181,6 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                 );
               })}
         </div>
-      </div>
-
-      {/* Sub-footer Note */}
-      <div className="text-center mt-2.5 text-xs sm:text-sm font-semibold text-blue-600 flex items-center justify-center gap-1.5">
-        <Sparkles className="w-4 h-4 text-amber-500" />
-        <span>More events coming soon. Stay tuned! 📣</span>
       </div>
     </section>
   );

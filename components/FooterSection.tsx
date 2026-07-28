@@ -2,7 +2,7 @@
 
 import React from "react";
 import { PortalData } from "@/data/skeletonData";
-import { Quote, QrCode } from "lucide-react";
+import { Quote } from "lucide-react";
 
 interface FooterSectionProps {
   footer: PortalData["footer"];
@@ -95,8 +95,8 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
 
           {/* QR Code Container */}
           <div className="flex flex-col items-center flex-shrink-0 bg-slate-50 p-2 rounded-2xl border border-slate-200">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white p-1 rounded-xl shadow-2xs flex items-center justify-center border border-slate-100">
-              <QrCode className="w-full h-full text-blue-950" />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white p-1 rounded-xl shadow-2xs flex items-center justify-center border border-slate-100 overflow-hidden">
+              <img src="/qr-code.png" alt="QR Code" className="w-full h-full object-contain" />
             </div>
           </div>
         </div>

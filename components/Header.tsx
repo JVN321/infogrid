@@ -21,11 +21,6 @@ export const Header: React.FC<HeaderProps> = ({ data, isSkeleton }) => {
               <div className="h-3 w-32 bg-slate-200 rounded"></div>
             </div>
           </div>
-          <div className="hidden md:flex gap-3">
-            <div className="w-20 h-9 bg-slate-200 rounded-full"></div>
-            <div className="w-20 h-9 bg-slate-200 rounded-full"></div>
-            <div className="w-24 h-9 bg-slate-200 rounded-full"></div>
-          </div>
           <div className="w-28 h-9 bg-slate-200 rounded-lg"></div>
         </div>
       </header>
@@ -59,54 +54,6 @@ export const Header: React.FC<HeaderProps> = ({ data, isSkeleton }) => {
             <span className="text-[11px] italic text-blue-600 font-semibold mt-0.5 hidden xs:inline">
               {data.motto}
             </span>
-          </div>
-        </div>
-
-        {/* Center: Accreditation Badges */}
-        <div className="hidden md:flex items-center gap-3">
-          {/* Badge 1: NAAC */}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-amber-200 bg-amber-50/80 shadow-2xs">
-            <div className="w-6 h-6 rounded-full bg-amber-500 text-white font-black text-xs flex items-center justify-center shadow-2xs">
-              A
-            </div>
-            <div className="text-left">
-              <p className="text-[10px] font-extrabold text-amber-950 leading-none">
-                NAAC
-              </p>
-              <p className="text-[8px] font-bold text-amber-800 leading-tight">
-                A GRADE ACCREDITED
-              </p>
-            </div>
-          </div>
-
-          {/* Badge 2: NBA */}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-blue-200 bg-blue-50/80 shadow-2xs">
-            <div className="w-6 h-6 rounded-full bg-blue-600 text-white font-black text-[9px] flex items-center justify-center shadow-2xs tracking-tighter">
-              NBA
-            </div>
-            <div className="text-left">
-              <p className="text-[10px] font-extrabold text-blue-950 leading-none">
-                NBA
-              </p>
-              <p className="text-[8px] font-bold text-blue-800 leading-tight">
-                NATIONAL BOARD OF ACCREDITATION
-              </p>
-            </div>
-          </div>
-
-          {/* Badge 3: Innovation Council */}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-purple-200 bg-purple-50/80 shadow-2xs">
-            <div className="w-6 h-6 rounded-full bg-purple-600 text-white font-bold text-[10px] flex items-center justify-center shadow-2xs">
-              💡
-            </div>
-            <div className="text-left">
-              <p className="text-[10px] font-extrabold text-purple-950 leading-none">
-                IIC
-              </p>
-              <p className="text-[8px] font-bold text-purple-800 leading-tight">
-                MoE INITIATIVE
-              </p>
-            </div>
           </div>
         </div>
 
