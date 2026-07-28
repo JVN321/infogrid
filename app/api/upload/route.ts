@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { uploadToGCP } from "@/lib/gcpStorage";
+import { uploadToSupabaseStorage } from "@/lib/supabaseStorage";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,14 +14,14 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Try Google Cloud Storage Upload
+    // Try Supabase S3 Storage Upload
     try {
-      const url = await uploadToGCP(buffer, file.name, file.type);
+      const url = await uploadToSupabaseStorage(buffer, file.name, file.type);
       return NextResponse.json({ url, success: true });
-    } catch (gcpError: any) {
-      console.warn("GCP Storage Upload Warning:", gcpError.message);
+    } catch (supabaseError: any) {
+      console.warn("Supabase S3 Storage Upload Warning:", supabaseError.message);
       
-      // Fallback preview mode if GCP credentials are not configured yet
+      // Fallback preview mode if Supabase S3 credentials are not configured yet
       // Return a base64 data URL preview for local testing environment
       const base64 = buffer.toString("base64");
       const dataUrl = `data:${file.type};base64,${base64}`;
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
         url: dataUrl,
         success: true,
         isFallback: true,
-        message: "Uploaded as preview (Set GCP_* env vars in .env to upload to GCP Storage Bucket directly).",
+        message: "Uploaded as preview (Set SUPABASE_S3_* env vars in .env to upload to Supabase Storage Bucket directly).",
       });
     }
   } catch (error: any) {
