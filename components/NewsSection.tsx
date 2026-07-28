@@ -69,9 +69,9 @@ export const NewsSection: React.FC<NewsSectionProps> = ({
                 <div className="h-4 w-1/3 bg-slate-200 rounded"></div>
               </div>
             ))
-          : displayItems.map((item) => (
+          : displayItems.map((item, idx) => (
               <div
-                key={item.id}
+                key={`${item.id}-${idx}`}
                 className="bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between select-none transition-all duration-300 h-[305px] sm:h-[315px] hover:border-blue-300 hover:shadow-md"
               >
                 <div className="flex flex-col flex-1 justify-start">

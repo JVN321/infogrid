@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { NewsItem, GeneralNewsItem, AchievementItem, defaultSkeletonData } from "@/data/skeletonData";
+import { NewsItem, GeneralNewsItem, AchievementItem, UpcomingEvent, defaultSkeletonData } from "@/data/skeletonData";
 import {
   Newspaper,
   Trophy,
@@ -27,10 +27,13 @@ import {
   Globe,
   Search,
   Download,
+  Clock,
+  MapPin,
+  ExternalLink,
 } from "lucide-react";
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<"news" | "generalNews" | "achievements">("news");
+  const [activeTab, setActiveTab] = useState<"news" | "generalNews" | "events" | "achievements">("news");
 
   // Auth States
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -42,14 +45,23 @@ export default function AdminPage() {
   // Data States
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [generalNewsList, setGeneralNewsList] = useState<GeneralNewsItem[]>([]);
+  const [eventsList, setEventsList] = useState<UpcomingEvent[]>([]);
   const [achievementsList, setAchievementsList] = useState<AchievementItem[]>([]);
   const [isDbConnected, setIsDbConnected] = useState<boolean | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
 
-  // Auto-Fetch & Search News Tool States
+  // Auto-Fetch News States
   const [searchQuery, setSearchQuery] = useState("technology");
   const [fetchedNews, setFetchedNews] = useState<any[]>([]);
   const [fetchingNews, setFetchingNews] = useState(false);
+
+  // Convex Events Sync States
+  const [fetchingEvents, setFetchingEvents] = useState(false);
+  const [fetchEventsStats, setFetchEventsStats] = useState<{
+    totalRemote?: number;
+    newEventsCount?: number;
+    alreadyExistedCount?: number;
+  } | null>(null);
 
   // Form states for Campus News
   const [isEditingNews, setIsEditingNews] = useState<boolean>(false);
@@ -89,6 +101,29 @@ export default function AdminPage() {
     date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
     image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&q=80",
     source: "Global News",
+  });
+
+  // Form states for Events
+  const [isEditingEvent, setIsEditingEvent] = useState<boolean>(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [eventForm, setEventForm] = useState<{
+    day: string;
+    month: string;
+    color: UpcomingEvent["color"];
+    title: string;
+    time: string;
+    venue: string;
+    category: string;
+    ctaLink: string;
+  }>({
+    day: "15",
+    month: "JUN",
+    color: "blue",
+    title: "",
+    time: "10:00 AM - 01:00 PM",
+    venue: "Main Auditorium",
+    category: "Workshop",
+    ctaLink: "https://mitsmediaclub.com/events",
   });
 
   // Form states for Achievements
@@ -168,13 +203,15 @@ export default function AdminPage() {
   };
 
   const fetchInitialData = async () => {
-    // 1. Try loading from Supabase Prisma API
     try {
-      const [newsRes, genNewsRes, achRes] = await Promise.all([
+      const [newsRes, genNewsRes, eventsRes, achRes] = await Promise.all([
         fetch("/api/news"),
         fetch("/api/general-news"),
+        fetch("/api/events"),
         fetch("/api/achievements"),
       ]);
+
+      let dbWorking = false;
 
       if (newsRes.ok && genNewsRes.ok && achRes.ok) {
         const newsData = await newsRes.json();
@@ -185,9 +222,24 @@ export default function AdminPage() {
           setNewsList(newsData.length > 0 ? newsData : defaultSkeletonData.news);
           setGeneralNewsList(genNewsData.length > 0 ? genNewsData : defaultSkeletonData.generalNews);
           setAchievementsList(achData.length > 0 ? achData : defaultSkeletonData.achievements);
-          setIsDbConnected(true);
-          return;
+          dbWorking = true;
         }
+      }
+
+      if (eventsRes.ok) {
+        const eventsData = await eventsRes.json();
+        if (Array.isArray(eventsData) && eventsData.length > 0) {
+          setEventsList(eventsData);
+        } else {
+          setEventsList(defaultSkeletonData.upcomingEvents);
+        }
+      } else {
+        setEventsList(defaultSkeletonData.upcomingEvents);
+      }
+
+      if (dbWorking) {
+        setIsDbConnected(true);
+        return;
       }
     } catch (err) {
       console.warn("DB connection attempt failed, falling back to local storage", err);
@@ -201,20 +253,61 @@ export default function AdminPage() {
         const parsed = JSON.parse(local);
         setNewsList(parsed.news || defaultSkeletonData.news);
         setGeneralNewsList(parsed.generalNews || defaultSkeletonData.generalNews);
+        setEventsList(parsed.upcomingEvents || defaultSkeletonData.upcomingEvents);
         setAchievementsList(parsed.achievements || defaultSkeletonData.achievements);
       } catch (e) {
         setNewsList(defaultSkeletonData.news);
         setGeneralNewsList(defaultSkeletonData.generalNews);
+        setEventsList(defaultSkeletonData.upcomingEvents);
         setAchievementsList(defaultSkeletonData.achievements);
       }
     } else {
       setNewsList(defaultSkeletonData.news);
       setGeneralNewsList(defaultSkeletonData.generalNews);
+      setEventsList(defaultSkeletonData.upcomingEvents);
       setAchievementsList(defaultSkeletonData.achievements);
     }
   };
 
-  // Auto-Fetch External News from News API endpoint
+  // Convex Events Sync Function with Redundancy Protection
+  const handleFetchConvexEvents = async () => {
+    setFetchingEvents(true);
+    try {
+      const res = await fetch("/api/fetch-events?sync=true");
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setFetchEventsStats({
+          totalRemote: data.totalRemoteEvents,
+          newEventsCount: data.newEventsCount,
+          alreadyExistedCount: data.alreadyExistedCount,
+        });
+
+        if (data.newEventsCount > 0) {
+          const updatedEvents = [...data.events, ...eventsList];
+          setEventsList(updatedEvents);
+          syncToLocalStorage(newsList, generalNewsList, achievementsList, updatedEvents);
+          showNotify(
+            `Successfully fetched ${data.totalRemoteEvents} remote events! Added ${data.newEventsCount} new non-redundant event(s) to database (${data.alreadyExistedCount} already existed).`,
+            "success"
+          );
+        } else {
+          showNotify(
+            `Checked Convex Events API (${data.totalRemoteEvents} remote events). All events are already in display! Zero duplicate items added.`,
+            "info"
+          );
+        }
+      } else {
+        throw new Error(data.error || "Failed to fetch events from Convex API");
+      }
+    } catch (err: any) {
+      showNotify(err.message || "Failed to sync Convex Events", "error");
+    } finally {
+      setFetchingEvents(false);
+    }
+  };
+
+  // Auto-Fetch External News
   const autoFetchExternalNews = async (query: string) => {
     setFetchingNews(true);
     try {
@@ -234,7 +327,8 @@ export default function AdminPage() {
   const syncToLocalStorage = (
     updatedNews: NewsItem[],
     updatedGenNews: GeneralNewsItem[],
-    updatedAch: AchievementItem[]
+    updatedAch: AchievementItem[],
+    updatedEvents?: UpcomingEvent[]
   ) => {
     try {
       const existing = localStorage.getItem("infogrid_portal_data");
@@ -242,6 +336,9 @@ export default function AdminPage() {
       dataObj.news = updatedNews;
       dataObj.generalNews = updatedGenNews;
       dataObj.achievements = updatedAch;
+      if (updatedEvents) {
+        dataObj.upcomingEvents = updatedEvents;
+      }
       localStorage.setItem("infogrid_portal_data", JSON.stringify(dataObj));
     } catch (err) {
       console.error("LocalStorage save error:", err);
@@ -347,7 +444,7 @@ export default function AdminPage() {
     }
 
     setNewsList(updatedList);
-    syncToLocalStorage(updatedList, generalNewsList, achievementsList);
+    syncToLocalStorage(updatedList, generalNewsList, achievementsList, eventsList);
     resetNewsForm();
   };
 
@@ -377,7 +474,7 @@ export default function AdminPage() {
         console.error("Prisma delete error:", e);
       }
     }
-    syncToLocalStorage(updatedList, generalNewsList, achievementsList);
+    syncToLocalStorage(updatedList, generalNewsList, achievementsList, eventsList);
     showNotify("Campus news item deleted", "info");
   };
 
@@ -445,7 +542,7 @@ export default function AdminPage() {
     }
 
     setGeneralNewsList(updatedList);
-    syncToLocalStorage(newsList, updatedList, achievementsList);
+    syncToLocalStorage(newsList, updatedList, achievementsList, eventsList);
     resetGenNewsForm();
   };
 
@@ -476,7 +573,7 @@ export default function AdminPage() {
       }
     }
 
-    syncToLocalStorage(newsList, updatedList, achievementsList);
+    syncToLocalStorage(newsList, updatedList, achievementsList, eventsList);
     showNotify(`Imported "${article.title.substring(0, 30)}..." into General News!`);
   };
 
@@ -507,7 +604,7 @@ export default function AdminPage() {
         console.error("Prisma delete error:", e);
       }
     }
-    syncToLocalStorage(newsList, updatedList, achievementsList);
+    syncToLocalStorage(newsList, updatedList, achievementsList, eventsList);
     showNotify("General news item deleted", "info");
   };
 
@@ -522,6 +619,124 @@ export default function AdminPage() {
       date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
       image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&q=80",
       source: "Global News",
+    });
+  };
+
+  // EVENTS HANDLERS
+  const handleSaveEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!eventForm.title || !eventForm.venue) {
+      showNotify("Please fill in event title and venue", "error");
+      return;
+    }
+
+    const badgeBgMap = {
+      blue: "bg-blue-50 text-blue-700 border-blue-200",
+      green: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      purple: "bg-purple-50 text-purple-700 border-purple-200",
+      orange: "bg-amber-50 text-amber-700 border-amber-200",
+    };
+
+    const updatedEventObj: UpcomingEvent = {
+      id: isEditingEvent && editingEventId ? editingEventId : `evt-${Date.now()}`,
+      day: eventForm.day || "15",
+      month: (eventForm.month || "JUN").toUpperCase(),
+      color: eventForm.color,
+      title: eventForm.title,
+      time: eventForm.time,
+      venue: eventForm.venue,
+      category: eventForm.category,
+      categoryBadgeBg: badgeBgMap[eventForm.color],
+      ctaLink: eventForm.ctaLink,
+    };
+
+    let updatedList: UpcomingEvent[] = [];
+
+    if (isEditingEvent && editingEventId) {
+      updatedList = eventsList.map((item) =>
+        item.id === editingEventId ? updatedEventObj : item
+      );
+
+      if (isDbConnected) {
+        try {
+          await fetch("/api/events", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedEventObj),
+          });
+        } catch (e) {
+          console.error("Prisma update error:", e);
+        }
+      }
+      showNotify("Event updated successfully!");
+    } else {
+      updatedList = [updatedEventObj, ...eventsList];
+
+      if (isDbConnected) {
+        try {
+          const res = await fetch("/api/events", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedEventObj),
+          });
+          const created = await res.json();
+          if (created.id) updatedEventObj.id = created.id;
+        } catch (e) {
+          console.error("Prisma create error:", e);
+        }
+      }
+      showNotify("New event added to display!");
+    }
+
+    setEventsList(updatedList);
+    syncToLocalStorage(newsList, generalNewsList, achievementsList, updatedList);
+    resetEventForm();
+  };
+
+  const handleEditEvent = (item: UpcomingEvent) => {
+    setIsEditingEvent(true);
+    setEditingEventId(item.id);
+    setEventForm({
+      day: item.day,
+      month: item.month,
+      color: item.color,
+      title: item.title,
+      time: item.time,
+      venue: item.venue,
+      category: item.category,
+      ctaLink: item.ctaLink || "#",
+    });
+    window.scrollTo({ top: 300, behavior: "smooth" });
+  };
+
+  const handleDeleteEvent = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this event?")) return;
+    const updatedList = eventsList.filter((item) => item.id !== id);
+    setEventsList(updatedList);
+
+    if (isDbConnected) {
+      try {
+        await fetch(`/api/events?id=${id}`, { method: "DELETE" });
+      } catch (e) {
+        console.error("Prisma delete error:", e);
+      }
+    }
+    syncToLocalStorage(newsList, generalNewsList, achievementsList, updatedList);
+    showNotify("Event deleted", "info");
+  };
+
+  const resetEventForm = () => {
+    setIsEditingEvent(false);
+    setEditingEventId(null);
+    setEventForm({
+      day: "15",
+      month: "JUN",
+      color: "blue",
+      title: "",
+      time: "10:00 AM - 01:00 PM",
+      venue: "Main Auditorium",
+      category: "Workshop",
+      ctaLink: "https://mitsmediaclub.com/events",
     });
   };
 
@@ -576,7 +791,7 @@ export default function AdminPage() {
     }
 
     setAchievementsList(updatedList);
-    syncToLocalStorage(newsList, generalNewsList, updatedList);
+    syncToLocalStorage(newsList, generalNewsList, updatedList, eventsList);
     resetAchievementForm();
   };
 
@@ -605,7 +820,7 @@ export default function AdminPage() {
         console.error("Prisma delete error:", e);
       }
     }
-    syncToLocalStorage(newsList, generalNewsList, updatedList);
+    syncToLocalStorage(newsList, generalNewsList, updatedList, eventsList);
     showNotify("Achievement item deleted", "info");
   };
 
@@ -622,14 +837,16 @@ export default function AdminPage() {
   };
 
   const handleResetAllDefaults = () => {
-    if (confirm("Reset all news and achievements to default initial dataset?")) {
+    if (confirm("Reset all news, events, and achievements to default initial dataset?")) {
       setNewsList(defaultSkeletonData.news);
       setGeneralNewsList(defaultSkeletonData.generalNews);
+      setEventsList(defaultSkeletonData.upcomingEvents);
       setAchievementsList(defaultSkeletonData.achievements);
       syncToLocalStorage(
         defaultSkeletonData.news,
         defaultSkeletonData.generalNews,
-        defaultSkeletonData.achievements
+        defaultSkeletonData.achievements,
+        defaultSkeletonData.upcomingEvents
       );
       showNotify("Reset to default dataset successfully!");
     }
@@ -707,9 +924,9 @@ export default function AdminPage() {
           </form>
 
           <div className="mt-6 text-center border-t border-slate-800/60 pt-4">
-            <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors">
+            <Link href="/display" className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors">
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Portal Preview</span>
+              <span>Go to Campus Display Screen</span>
             </Link>
           </div>
         </div>
@@ -768,17 +985,17 @@ export default function AdminPage() {
             <span>Logout</span>
           </button>
           <Link
-            href="/"
+            href="/display"
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg transition-all"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Portal Preview</span>
+            <span>View Campus Display</span>
           </Link>
         </div>
       </div>
 
       {/* Info Status Banner */}
-      <div className="max-w-7xl mx-auto mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="max-w-7xl mx-auto mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-start gap-3">
           <div className="p-2.5 bg-blue-500/10 text-blue-400 rounded-xl">
             <Newspaper className="w-5 h-5" />
@@ -800,27 +1017,22 @@ export default function AdminPage() {
         </div>
 
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-start gap-3">
+          <div className="p-2.5 bg-sky-500/10 text-sky-400 rounded-xl">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-slate-400 text-xs font-medium">Campus Events</div>
+            <div className="text-xl font-extrabold text-white mt-0.5">{eventsList.length} Items</div>
+          </div>
+        </div>
+
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-start gap-3">
           <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl">
             <Trophy className="w-5 h-5" />
           </div>
           <div>
             <div className="text-slate-400 text-xs font-medium">Achievements Count</div>
             <div className="text-xl font-extrabold text-white mt-0.5">{achievementsList.length} Items</div>
-          </div>
-        </div>
-
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-start gap-3">
-          <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl">
-            <Cloud className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-slate-400 text-xs font-medium">Cloud & DB Integration</div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="text-xs font-bold text-slate-200">
-                R2 & News API Enabled
-              </span>
-            </div>
           </div>
         </div>
       </div>
@@ -848,7 +1060,19 @@ export default function AdminPage() {
           }`}
         >
           <Globe className="w-4 h-4" />
-          <span>General News & Auto-Fetch ({generalNewsList.length})</span>
+          <span>General News ({generalNewsList.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("events")}
+          className={`flex items-center gap-2 px-5 py-3 font-bold text-sm border-b-2 transition-all ${
+            activeTab === "events"
+              ? "border-sky-500 text-sky-400 bg-sky-500/5 rounded-t-xl"
+              : "border-transparent text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
+          <span>Events & Convex Sync ({eventsList.length})</span>
         </button>
 
         <button
@@ -899,42 +1123,30 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Description *</label>
-                <textarea
-                  required
-                  rows={3}
-                  placeholder="Enter news summary..."
-                  value={newsForm.description}
-                  onChange={(e) => setNewsForm({ ...newsForm, description: e.target.value })}
-                  className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                ></textarea>
-              </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Tag</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Badge Tag</label>
                   <input
                     type="text"
+                    required
                     placeholder="e.g. NEW, PLACEMENT"
                     value={newsForm.tag}
                     onChange={(e) => setNewsForm({ ...newsForm, tag: e.target.value })}
-                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase"
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
+
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">Tag Color</label>
                   <select
                     value={newsForm.tagColor}
-                    onChange={(e) =>
-                      setNewsForm({ ...newsForm, tagColor: e.target.value as NewsItem["tagColor"] })
-                    }
+                    onChange={(e) => setNewsForm({ ...newsForm, tagColor: e.target.value as any })}
                     className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
                     <option value="blue">Blue</option>
-                    <option value="green">Emerald Green</option>
+                    <option value="green">Green</option>
                     <option value="darkgreen">Dark Green</option>
-                    <option value="orange">Orange / Amber</option>
+                    <option value="orange">Orange</option>
                     <option value="purple">Purple</option>
                   </select>
                 </div>
@@ -944,6 +1156,7 @@ export default function AdminPage() {
                 <label className="block text-xs font-bold text-slate-300 mb-1">Date</label>
                 <input
                   type="text"
+                  required
                   placeholder="e.g. 28 May 2025"
                   value={newsForm.date}
                   onChange={(e) => setNewsForm({ ...newsForm, date: e.target.value })}
@@ -951,44 +1164,47 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-300">
-                  Image (Cloudflare R2 Bucket / Upload)
-                </label>
-                <div className="flex items-center gap-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Description *</label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Summary description of the news item..."
+                  value={newsForm.description}
+                  onChange={(e) => setNewsForm({ ...newsForm, description: e.target.value })}
+                  className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                ></textarea>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Image URL or Cloudflare R2 Upload</label>
+                <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Image URL"
+                    required
+                    placeholder="https://..."
                     value={newsForm.image}
                     onChange={(e) => setNewsForm({ ...newsForm, image: e.target.value })}
                     className="flex-1 text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
-                  <label className="flex items-center gap-1.5 px-3 py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl cursor-pointer transition-all flex-shrink-0">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{uploadingImage ? "Uploading..." : "Upload File"}</span>
+                  <label className="px-3 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl cursor-pointer flex items-center justify-center transition-colors">
+                    <Upload className="w-4 h-4" />
                     <input
                       type="file"
                       accept="image/*"
                       onChange={(e) => handleImageUpload(e, "news")}
-                      disabled={uploadingImage}
                       className="hidden"
                     />
                   </label>
                 </div>
-
-                {newsForm.image && (
-                  <div className="relative rounded-xl overflow-hidden h-28 border border-slate-800 bg-slate-950 mt-2">
-                    <img src={newsForm.image} alt="News Preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
               >
-                <Check className="w-4 h-4" />
-                <span>{isEditingNews ? "Save Changes" : "Add Campus News Item"}</span>
+                {isEditingNews ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                <span>{isEditingNews ? "Update News Item" : "Publish Campus News"}</span>
               </button>
             </form>
           ) : activeTab === "generalNews" ? (
@@ -1011,15 +1227,41 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Title *</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Headline *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Breakthrough in Quantum Computing Architecture"
+                  placeholder="e.g. Breakthrough in Quantum Computing"
                   value={genNewsForm.title}
                   onChange={(e) => setGenNewsForm({ ...genNewsForm, title: e.target.value })}
                   className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Badge Tag</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. GLOBAL TECH"
+                    value={genNewsForm.tag}
+                    onChange={(e) => setGenNewsForm({ ...genNewsForm, tag: e.target.value })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Source Outlet</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Tech Insights"
+                    value={genNewsForm.source}
+                    onChange={(e) => setGenNewsForm({ ...genNewsForm, source: e.target.value })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
               </div>
 
               <div>
@@ -1027,103 +1269,172 @@ export default function AdminPage() {
                 <textarea
                   required
                   rows={3}
-                  placeholder="Enter global news details..."
+                  placeholder="Summary of the global/tech article..."
                   value={genNewsForm.description}
                   onChange={(e) => setGenNewsForm({ ...genNewsForm, description: e.target.value })}
                   className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 ></textarea>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Category Tag</label>
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Image URL</label>
+                <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="e.g. GLOBAL TECH, AI RESEARCH"
-                    value={genNewsForm.tag}
-                    onChange={(e) => setGenNewsForm({ ...genNewsForm, tag: e.target.value })}
-                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none uppercase"
+                    required
+                    placeholder="https://..."
+                    value={genNewsForm.image}
+                    onChange={(e) => setGenNewsForm({ ...genNewsForm, image: e.target.value })}
+                    className="flex-1 text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                  <label className="px-3 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl cursor-pointer flex items-center justify-center transition-colors">
+                    <Upload className="w-4 h-4" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, "generalNews")}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+              >
+                {isEditingGenNews ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                <span>{isEditingGenNews ? "Update General News" : "Publish General News"}</span>
+              </button>
+            </form>
+          ) : activeTab === "events" ? (
+            /* EVENTS FORM */
+            <form onSubmit={handleSaveEvent} className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+                  {isEditingEvent ? <Edit className="w-4 h-4 text-sky-400" /> : <Plus className="w-4 h-4 text-sky-400" />}
+                  <span>{isEditingEvent ? "Edit Campus Event" : "Add New Campus Event"}</span>
+                </h3>
+                {isEditingEvent && (
+                  <button
+                    type="button"
+                    onClick={resetEventForm}
+                    className="text-xs text-rose-400 hover:underline font-semibold"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Event Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Build a Search Engine"
+                  value={eventForm.title}
+                  onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+                  className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Day (e.g. 24)</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="24"
+                    value={eventForm.day}
+                    onChange={(e) => setEventForm({ ...eventForm, day: e.target.value })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Tag Color</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Month (e.g. MAR)</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="MAR"
+                    value={eventForm.month}
+                    onChange={(e) => setEventForm({ ...eventForm, month: e.target.value.toUpperCase() })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Color Theme</label>
                   <select
-                    value={genNewsForm.tagColor}
-                    onChange={(e) =>
-                      setGenNewsForm({ ...genNewsForm, tagColor: e.target.value as GeneralNewsItem["tagColor"] })
-                    }
-                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    value={eventForm.color}
+                    onChange={(e) => setEventForm({ ...eventForm, color: e.target.value as any })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   >
-                    <option value="purple">Purple</option>
                     <option value="blue">Blue</option>
-                    <option value="green">Emerald Green</option>
-                    <option value="darkgreen">Dark Green</option>
-                    <option value="orange">Orange / Amber</option>
+                    <option value="green">Green</option>
+                    <option value="purple">Purple</option>
+                    <option value="orange">Orange</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Source / Publication</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Time</label>
                   <input
                     type="text"
-                    placeholder="e.g. TechCrunch, Nature"
-                    value={genNewsForm.source}
-                    onChange={(e) => setGenNewsForm({ ...genNewsForm, source: e.target.value })}
-                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    required
+                    placeholder="02:00 PM - 03:15 PM"
+                    value={eventForm.time}
+                    onChange={(e) => setEventForm({ ...eventForm, time: e.target.value })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Date</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Venue</label>
                   <input
                     type="text"
-                    placeholder="e.g. 28 May 2025"
-                    value={genNewsForm.date}
-                    onChange={(e) => setGenNewsForm({ ...genNewsForm, date: e.target.value })}
-                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    required
+                    placeholder="FOSS Lab / Seminar Hall"
+                    value={eventForm.venue}
+                    onChange={(e) => setEventForm({ ...eventForm, venue: e.target.value })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-300">
-                  Image (Cloudflare R2 Bucket / Upload)
-                </label>
-                <div className="flex items-center gap-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Category Badge</label>
                   <input
                     type="text"
-                    placeholder="Image URL"
-                    value={genNewsForm.image}
-                    onChange={(e) => setGenNewsForm({ ...genNewsForm, image: e.target.value })}
-                    className="flex-1 text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    required
+                    placeholder="Workshop, Competition..."
+                    value={eventForm.category}
+                    onChange={(e) => setEventForm({ ...eventForm, category: e.target.value })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   />
-                  <label className="flex items-center gap-1.5 px-3 py-3 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl cursor-pointer transition-all flex-shrink-0">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{uploadingImage ? "Uploading..." : "Upload File"}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e, "generalNews")}
-                      disabled={uploadingImage}
-                      className="hidden"
-                    />
-                  </label>
                 </div>
 
-                {genNewsForm.image && (
-                  <div className="relative rounded-xl overflow-hidden h-28 border border-slate-800 bg-slate-950 mt-2">
-                    <img src={genNewsForm.image} alt="General News Preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Registration Link</label>
+                  <input
+                    type="text"
+                    placeholder="https://..."
+                    value={eventForm.ctaLink}
+                    onChange={(e) => setEventForm({ ...eventForm, ctaLink: e.target.value })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                  />
+                </div>
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+                className="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
               >
-                <Check className="w-4 h-4" />
-                <span>{isEditingGenNews ? "Save Changes" : "Add General News Item"}</span>
+                {isEditingEvent ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                <span>{isEditingEvent ? "Update Campus Event" : "Add Campus Event"}</span>
               </button>
             </form>
           ) : (
@@ -1131,14 +1442,8 @@ export default function AdminPage() {
             <form onSubmit={handleSaveAchievement} className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 className="font-extrabold text-base text-white flex items-center gap-2">
-                  {isEditingAchievement ? (
-                    <Edit className="w-4 h-4 text-amber-400" />
-                  ) : (
-                    <Plus className="w-4 h-4 text-amber-400" />
-                  )}
-                  <span>
-                    {isEditingAchievement ? "Edit Achievement Item" : "Add New Achievement Item"}
-                  </span>
+                  {isEditingAchievement ? <Edit className="w-4 h-4 text-amber-400" /> : <Plus className="w-4 h-4 text-amber-400" />}
+                  <span>{isEditingAchievement ? "Edit Achievement Item" : "Add New Achievement Showcase"}</span>
                 </h3>
                 {isEditingAchievement && (
                   <button
@@ -1152,17 +1457,43 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Title *</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Achievement Title *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Hackathon Winners 2025"
                   value={achievementForm.title}
-                  onChange={(e) =>
-                    setAchievementForm({ ...achievementForm, title: e.target.value })
-                  }
+                  onChange={(e) => setAchievementForm({ ...achievementForm, title: e.target.value })}
                   className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Badge Icon Type</label>
+                  <select
+                    value={achievementForm.badgeType}
+                    onChange={(e) => setAchievementForm({ ...achievementForm, badgeType: e.target.value as any })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  >
+                    <option value="trophy">Trophy 🏆</option>
+                    <option value="medal">Medal 🥇</option>
+                    <option value="ribbon">Ribbon 🎗️</option>
+                    <option value="star">Star 🌟</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Date</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 22 May 2025"
+                    value={achievementForm.date}
+                    onChange={(e) => setAchievementForm({ ...achievementForm, date: e.target.value })}
+                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                </div>
               </div>
 
               <div>
@@ -1170,378 +1501,345 @@ export default function AdminPage() {
                 <textarea
                   required
                   rows={3}
-                  placeholder="Enter achievement details..."
+                  placeholder="Short description of award, ranking or accolade..."
                   value={achievementForm.description}
-                  onChange={(e) =>
-                    setAchievementForm({ ...achievementForm, description: e.target.value })
-                  }
+                  onChange={(e) => setAchievementForm({ ...achievementForm, description: e.target.value })}
                   className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 ></textarea>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Badge Type</label>
-                  <select
-                    value={achievementForm.badgeType}
-                    onChange={(e) =>
-                      setAchievementForm({
-                        ...achievementForm,
-                        badgeType: e.target.value as AchievementItem["badgeType"],
-                      })
-                    }
-                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                  >
-                    <option value="trophy">🏆 Trophy</option>
-                    <option value="medal">🥇 Medal</option>
-                    <option value="ribbon">🎗️ Ribbon</option>
-                    <option value="star">⭐ Star</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Date</label>
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Image URL</label>
+                <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="e.g. 22 May 2025"
-                    value={achievementForm.date}
-                    onChange={(e) =>
-                      setAchievementForm({ ...achievementForm, date: e.target.value })
-                    }
-                    className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-300">
-                  Image (Cloudflare R2 Bucket / Upload)
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="Image URL"
+                    required
+                    placeholder="https://..."
                     value={achievementForm.image}
-                    onChange={(e) =>
-                      setAchievementForm({ ...achievementForm, image: e.target.value })
-                    }
+                    onChange={(e) => setAchievementForm({ ...achievementForm, image: e.target.value })}
                     className="flex-1 text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
-                  <label className="flex items-center gap-1.5 px-3 py-3 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl cursor-pointer transition-all flex-shrink-0">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{uploadingImage ? "Uploading..." : "Upload File"}</span>
+                  <label className="px-3 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl cursor-pointer flex items-center justify-center transition-colors">
+                    <Upload className="w-4 h-4" />
                     <input
                       type="file"
                       accept="image/*"
                       onChange={(e) => handleImageUpload(e, "achievement")}
-                      disabled={uploadingImage}
                       className="hidden"
                     />
                   </label>
                 </div>
-
-                {achievementForm.image && (
-                  <div className="relative rounded-xl overflow-hidden h-28 border border-slate-800 bg-slate-950 mt-2">
-                    <img
-                      src={achievementForm.image}
-                      alt="Achievement Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+                className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
               >
-                <Check className="w-4 h-4" />
-                <span>{isEditingAchievement ? "Save Changes" : "Add Achievement Item"}</span>
+                {isEditingAchievement ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                <span>{isEditingAchievement ? "Update Achievement" : "Publish Achievement"}</span>
               </button>
             </form>
           )}
         </div>
 
-        {/* RIGHT COLUMN: List Views & Auto-Fetch News Tool */}
+        {/* RIGHT COLUMN: Items List & Convex / External Fetcher Tools */}
         <div className="lg:col-span-7 space-y-6">
-          {activeTab === "news" ? (
-            /* CAMPUS NEWS LIST */
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
-                <h3 className="font-extrabold text-base text-white flex items-center gap-2">
-                  <Newspaper className="w-4 h-4 text-blue-400" />
-                  <span>Existing Campus News ({newsList.length})</span>
-                </h3>
-              </div>
-
-              {newsList.length === 0 ? (
-                <div className="text-center py-10 text-slate-500 text-xs">
-                  No news items added yet. Use the form on the left to add one!
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {newsList.map((item) => (
-                    <div
-                      key={item.id}
-                      className="bg-slate-950 border border-slate-800/80 rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-slate-700 transition-all"
-                    >
-                      <div className="flex items-center gap-3.5">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="w-16 h-16 rounded-xl object-cover border border-slate-800 flex-shrink-0"
-                        />
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 uppercase">
-                              {item.tag}
-                            </span>
-                            <span className="text-[11px] text-slate-400">{item.date}</span>
-                          </div>
-                          <h4 className="font-bold text-sm text-white">{item.title}</h4>
-                          <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">
-                            {item.description}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 self-end sm:self-center">
-                        <button
-                          onClick={() => handleEditNews(item)}
-                          className="p-2 bg-slate-900 hover:bg-slate-800 text-blue-400 rounded-lg border border-slate-800 transition-colors"
-                          title="Edit Item"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteNews(item.id)}
-                          className="p-2 bg-slate-900 hover:bg-rose-950/50 text-rose-400 rounded-lg border border-slate-800 transition-colors"
-                          title="Delete Item"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : activeTab === "generalNews" ? (
-            /* GENERAL NEWS MANAGEMENT & AUTO-FETCH TOOL */
-            <div className="space-y-6">
-              {/* SEARCH & AUTO-FETCH NEWS API PANEL */}
-              <div className="bg-slate-900 border border-purple-900/40 rounded-3xl p-6 shadow-xl">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-purple-400" />
-                    <div>
-                      <h3 className="font-extrabold text-base text-white">Search & Auto-Fetch News</h3>
-                      <p className="text-xs text-slate-400">Discover and 1-click import global news articles</p>
-                    </div>
+          {/* SPECIAL TOOL BANNER FOR CONVEX EVENTS SYNC IN EVENTS TAB */}
+          {activeTab === "events" && (
+            <div className="bg-gradient-to-br from-sky-950/90 via-slate-900 to-blue-950/90 border border-sky-800/80 rounded-3xl p-5 shadow-xl relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 text-sky-400 font-extrabold text-xs uppercase tracking-wider mb-1">
+                    <Sparkles className="w-4 h-4" />
+                    <span>Convex MITS Media Club Events API</span>
                   </div>
-
-                  {/* Search Bar */}
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1 sm:w-48">
-                      <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
-                      <input
-                        type="text"
-                        placeholder="Topic (e.g. AI, Space, Science)..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && autoFetchExternalNews(searchQuery)}
-                        className="w-full text-xs pl-8 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                      />
-                    </div>
-                    <button
-                      onClick={() => autoFetchExternalNews(searchQuery)}
-                      disabled={fetchingNews}
-                      className="px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 flex-shrink-0"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${fetchingNews ? "animate-spin" : ""}`} />
-                      <span>{fetchingNews ? "Fetching..." : "Fetch News"}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Fetched News Results Grid */}
-                {fetchedNews.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                      Fetched Articles for "{searchQuery}" ({fetchedNews.length})
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {fetchedNews.map((art) => (
-                        <div
-                          key={art.id}
-                          className="bg-slate-950 border border-slate-800 rounded-2xl p-3 flex flex-col justify-between"
-                        >
-                          <div>
-                            <img
-                              src={art.image}
-                              alt={art.title}
-                              className="w-full h-24 object-cover rounded-xl mb-2"
-                            />
-                            <div className="flex items-center justify-between text-[10px] text-purple-400 font-bold mb-1">
-                              <span>{art.tag}</span>
-                              <span className="text-slate-500">{art.source}</span>
-                            </div>
-                            <h5 className="font-bold text-xs text-white leading-snug mb-1 line-clamp-2">
-                              {art.title}
-                            </h5>
-                            <p className="text-[11px] text-slate-400 line-clamp-2 mb-2">
-                              {art.description}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => handleImportFetchedArticle(art)}
-                            className="w-full py-1.5 bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/30 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            <span>Import to General News</span>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* EXISTING GENERAL NEWS LIST */}
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
-                  <h3 className="font-extrabold text-base text-white flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-purple-400" />
-                    <span>Active General News Items ({generalNewsList.length})</span>
+                  <h3 className="text-lg font-black text-white">
+                    Auto-Fetch & Sync Convex Events
                   </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Endpoint: <code className="text-sky-300 font-mono">https://convexapi.mitsmediaclub.com/api/events</code>
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Uses Bearer token authentication & unique ID checks to guarantee <strong className="text-emerald-400">ZERO REDUNDANCY</strong>.
+                  </p>
                 </div>
 
-                {generalNewsList.length === 0 ? (
-                  <div className="text-center py-10 text-slate-500 text-xs">
-                    No general news items added yet. Use the form on the left or auto-fetch above to add items!
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {generalNewsList.map((item) => (
-                      <div
-                        key={item.id}
-                        className="bg-slate-950 border border-slate-800/80 rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-slate-700 transition-all"
-                      >
-                        <div className="flex items-center gap-3.5">
-                          <img
-                            src={item.image}
-                            alt={item.title}
-                            className="w-16 h-16 rounded-xl object-cover border border-slate-800 flex-shrink-0"
-                          />
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 uppercase">
-                                {item.tag}
-                              </span>
-                              <span className="text-[11px] text-slate-400">{item.date}</span>
-                              {item.source && (
-                                <span className="text-[10px] text-slate-500 font-semibold">• {item.source}</span>
-                              )}
-                            </div>
-                            <h4 className="font-bold text-sm text-white">{item.title}</h4>
-                            <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">
-                              {item.description}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 self-end sm:self-center">
-                          <button
-                            onClick={() => handleEditGenNews(item)}
-                            className="p-2 bg-slate-900 hover:bg-slate-800 text-purple-400 rounded-lg border border-slate-800 transition-colors"
-                            title="Edit Item"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteGenNews(item.id)}
-                            className="p-2 bg-slate-900 hover:bg-rose-950/50 text-rose-400 rounded-lg border border-slate-800 transition-colors"
-                            title="Delete Item"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            /* ACHIEVEMENTS ITEMS LIST */
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
-                <h3 className="font-extrabold text-base text-white flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-amber-400" />
-                  <span>Existing Achievements ({achievementsList.length})</span>
-                </h3>
+                <button
+                  onClick={handleFetchConvexEvents}
+                  disabled={fetchingEvents}
+                  className="px-5 py-3 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white text-xs font-extrabold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider flex-shrink-0"
+                >
+                  {fetchingEvents ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>Syncing Convex API...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>Fetch & Sync Events</span>
+                    </>
+                  )}
+                </button>
               </div>
 
-              {achievementsList.length === 0 ? (
-                <div className="text-center py-10 text-slate-500 text-xs">
-                  No achievement items added yet. Use the form on the left to add one!
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {achievementsList.map((item) => (
-                    <div
-                      key={item.id}
-                      className="bg-slate-950 border border-slate-800/80 rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-slate-700 transition-all"
-                    >
-                      <div className="flex items-center gap-3.5">
-                        <div className="relative">
-                          <img
-                            src={item.image}
-                            alt={item.title}
-                            className="w-16 h-16 rounded-xl object-cover border border-slate-800 flex-shrink-0"
-                          />
-                          <span className="absolute -top-1.5 -left-1.5 text-xs bg-slate-900 p-1 rounded-full border border-slate-700">
-                            {item.badgeType === "trophy" && "🏆"}
-                            {item.badgeType === "medal" && "🥇"}
-                            {item.badgeType === "ribbon" && "🎗️"}
-                            {item.badgeType === "star" && "⭐"}
-                          </span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
-                              {item.badgeType}
-                            </span>
-                            <span className="text-[11px] text-slate-400">{item.date}</span>
-                          </div>
-                          <h4 className="font-bold text-sm text-white">{item.title}</h4>
-                          <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">
-                            {item.description}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 self-end sm:self-center">
-                        <button
-                          onClick={() => handleEditAchievement(item)}
-                          className="p-2 bg-slate-900 hover:bg-slate-800 text-amber-400 rounded-lg border border-slate-800 transition-colors"
-                          title="Edit Item"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteAchievement(item.id)}
-                          className="p-2 bg-slate-900 hover:bg-rose-950/50 text-rose-400 rounded-lg border border-slate-800 transition-colors"
-                          title="Delete Item"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+              {fetchEventsStats && (
+                <div className="mt-4 pt-3 border-t border-sky-900/60 flex flex-wrap gap-4 text-xs font-semibold">
+                  <span className="text-slate-300">
+                    Remote Events: <strong className="text-white">{fetchEventsStats.totalRemote}</strong>
+                  </span>
+                  <span className="text-emerald-400">
+                    New Non-Redundant Added: <strong>{fetchEventsStats.newEventsCount}</strong>
+                  </span>
+                  <span className="text-amber-400">
+                    Already Existed (Skipped): <strong>{fetchEventsStats.alreadyExistedCount}</strong>
+                  </span>
                 </div>
               )}
             </div>
           )}
+
+          {/* LIST CONTAINER */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+              <h3 className="font-extrabold text-base text-white">
+                {activeTab === "news"
+                  ? `Published Campus News (${newsList.length})`
+                  : activeTab === "generalNews"
+                  ? `Published General News (${generalNewsList.length})`
+                  : activeTab === "events"
+                  ? `Campus Events in Display (${eventsList.length})`
+                  : `Published Achievements (${achievementsList.length})`}
+              </h3>
+            </div>
+
+            {/* CAMPUS NEWS LIST */}
+            {activeTab === "news" && (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                {newsList.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic py-6 text-center">No campus news items published yet.</p>
+                ) : (
+                  newsList.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 group hover:border-slate-700 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-slate-900"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 text-[9px] font-black rounded bg-blue-950 text-blue-400 border border-blue-800 uppercase">
+                              {item.tag}
+                            </span>
+                            <span className="text-[10px] text-slate-400">{item.date}</span>
+                          </div>
+                          <h4 className="font-extrabold text-white text-xs sm:text-sm line-clamp-1">{item.title}</h4>
+                          <p className="text-slate-400 text-xs line-clamp-1">{item.description}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEditNews(item)}
+                          className="p-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteNews(item.id)}
+                          className="p-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* GENERAL NEWS LIST */}
+            {activeTab === "generalNews" && (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                {generalNewsList.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic py-6 text-center">No general news items published yet.</p>
+                ) : (
+                  generalNewsList.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 group hover:border-slate-700 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-slate-900"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 text-[9px] font-black rounded bg-purple-950 text-purple-400 border border-purple-800 uppercase">
+                              {item.tag}
+                            </span>
+                            <span className="text-[10px] text-slate-400">{item.date}</span>
+                          </div>
+                          <h4 className="font-extrabold text-white text-xs sm:text-sm line-clamp-1">{item.title}</h4>
+                          <p className="text-slate-400 text-xs line-clamp-1">{item.description}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEditGenNews(item)}
+                          className="p-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteGenNews(item.id)}
+                          className="p-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* EVENTS LIST */}
+            {activeTab === "events" && (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                {eventsList.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic py-6 text-center">No campus events in display.</p>
+                ) : (
+                  eventsList.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 group hover:border-slate-700 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-sky-950 text-sky-400 border border-sky-800 flex flex-col items-center justify-center flex-shrink-0">
+                          <span className="text-base font-black leading-none">{item.day}</span>
+                          <span className="text-[9px] font-bold uppercase mt-0.5">{item.month}</span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 text-[9px] font-extrabold rounded bg-slate-900 text-slate-300 border border-slate-800">
+                              {item.category}
+                            </span>
+                            {item.externalId && (
+                              <span className="px-1.5 py-0.5 text-[8px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 rounded">
+                                Convex Synced
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="font-extrabold text-white text-xs sm:text-sm line-clamp-1">{item.title}</h4>
+                          <div className="flex items-center gap-3 text-slate-400 text-[11px] mt-0.5">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-slate-500" />
+                              {item.time}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-slate-500" />
+                              {item.venue}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {item.ctaLink && item.ctaLink !== "#" && (
+                          <a
+                            href={item.ctaLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 bg-slate-900 hover:bg-slate-800 text-sky-400 rounded-lg transition-colors"
+                            title="Registration Link"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleEditEvent(item)}
+                          className="p-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEvent(item.id)}
+                          className="p-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* ACHIEVEMENTS LIST */}
+            {activeTab === "achievements" && (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                {achievementsList.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic py-6 text-center">No achievements items published yet.</p>
+                ) : (
+                  achievementsList.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 group hover:border-slate-700 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-slate-900"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 text-[9px] font-black rounded bg-amber-950 text-amber-400 border border-amber-800 uppercase">
+                              {item.badgeType}
+                            </span>
+                            <span className="text-[10px] text-slate-400">{item.date}</span>
+                          </div>
+                          <h4 className="font-extrabold text-white text-xs sm:text-sm line-clamp-1">{item.title}</h4>
+                          <p className="text-slate-400 text-xs line-clamp-1">{item.description}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEditAchievement(item)}
+                          className="p-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAchievement(item.id)}
+                          className="p-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

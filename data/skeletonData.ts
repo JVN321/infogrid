@@ -58,6 +58,7 @@ export interface FeaturedEvent {
 
 export interface UpcomingEvent {
   id: string;
+  externalId?: string;
   day: string;
   month: string;
   color: 'blue' | 'green' | 'purple' | 'orange';
@@ -66,6 +67,7 @@ export interface UpcomingEvent {
   venue: string;
   category: string;
   categoryBadgeBg: string;
+  ctaLink?: string;
 }
 
 export interface AchievementItem {

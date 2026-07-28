@@ -44,3 +44,28 @@ model AchievementItem {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model EventItem {
+  id                     String   @id @default(cuid())
+  externalId             String?  @unique
+  badge                  String   @default("Event")
+  title                  String
+  tagline                String?  @default("")
+  description            String?  @default("")
+  dateRange              String?  @default("")
+  date                   String?  @default("")
+  day                    String?  @default("")
+  month                  String?  @default("")
+  time                   String?  @default("")
+  venue                  String?  @default("")
+  category               String   @default("Event")
+  color                  String   @default("blue")
+  categoryBadgeBg        String   @default("bg-blue-50 text-blue-600 border-blue-200")
+  image                  String   @default("")
+  ctaText                String   @default("Register Now")
+  ctaLink                String   @default("#")
+  isFeatured             Boolean  @default(false)
+  isRegistrationRequired Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
