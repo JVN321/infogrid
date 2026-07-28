@@ -2,7 +2,7 @@
 
 import React from "react";
 import { NewsItem } from "@/data/skeletonData";
-import { Newspaper, Calendar, ArrowRight } from "lucide-react";
+import { Newspaper, Calendar } from "lucide-react";
 
 interface NewsSectionProps {
   news: NewsItem[];
@@ -29,7 +29,7 @@ export const NewsSection: React.FC<NewsSectionProps> = ({ news, isSkeleton }) =>
 
   return (
     <section className="my-3 sm:my-4 flex-shrink-0">
-      {/* Section Header */}
+      {/* Section Header - View All Button Removed */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
@@ -39,16 +39,9 @@ export const NewsSection: React.FC<NewsSectionProps> = ({ news, isSkeleton }) =>
             CAMPUS NEWS
           </h3>
         </div>
-        <a
-          href="#"
-          className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors group"
-        >
-          <span>View All</span>
-          <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
-        </a>
       </div>
 
-      {/* Grid of 4 News Cards */}
+      {/* Grid of News Cards - Non-interactive Display */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {isSkeleton
           ? Array.from({ length: 4 }).map((_, i) => (
@@ -65,7 +58,7 @@ export const NewsSection: React.FC<NewsSectionProps> = ({ news, isSkeleton }) =>
           : news.map((item) => (
               <div
                 key={item.id}
-                className="bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200/80 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
+                className="bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between select-none"
               >
                 <div>
                   {/* Thumbnail Image */}
@@ -73,7 +66,7 @@ export const NewsSection: React.FC<NewsSectionProps> = ({ news, isSkeleton }) =>
                     <img
                       src={item.image}
                       alt={item.title}
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover object-center"
                     />
                   </div>
 
@@ -89,7 +82,7 @@ export const NewsSection: React.FC<NewsSectionProps> = ({ news, isSkeleton }) =>
                   </div>
 
                   {/* Title */}
-                  <h4 className="font-extrabold text-blue-950 text-sm sm:text-base leading-snug mb-1 group-hover:text-blue-600 transition-colors">
+                  <h4 className="font-extrabold text-blue-950 text-sm sm:text-base leading-snug mb-1">
                     {item.title}
                   </h4>
 

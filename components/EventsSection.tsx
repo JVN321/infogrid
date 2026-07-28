@@ -2,7 +2,7 @@
 
 import React from "react";
 import { FeaturedEvent, UpcomingEvent } from "@/data/skeletonData";
-import { Calendar, ArrowRight, Clock, MapPin, Sparkles } from "lucide-react";
+import { Calendar, Clock, MapPin, Sparkles } from "lucide-react";
 
 interface EventsSectionProps {
   featured: FeaturedEvent;
@@ -52,7 +52,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
   return (
     <section className="my-3 sm:my-4 flex-shrink-0">
-      {/* Section Header */}
+      {/* Section Header - View All Removed */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
@@ -62,23 +62,16 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             CAMPUS EVENTS
           </h3>
         </div>
-        <a
-          href="#"
-          className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors group"
-        >
-          <span>View All</span>
-          <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
-        </a>
       </div>
 
-      {/* 2 Column Split Layout */}
+      {/* 2 Column Split Layout - Non-interactive Display */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         {/* Left Column: Featured Event Card Banner */}
-        <div className="lg:col-span-5 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-md group flex flex-col justify-between p-4 sm:p-6 min-h-[220px] sm:min-h-[260px] border border-blue-900/30">
+        <div className="lg:col-span-5 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-4 sm:p-6 min-h-[220px] sm:min-h-[260px] border border-blue-900/30 select-none">
           <img
             src={featured.image}
             alt={featured.title}
-            className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+            className="absolute inset-0 w-full h-full object-cover object-center"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-blue-950/80 to-blue-950/40"></div>
 
@@ -110,13 +103,9 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             </div>
 
             <div className="pt-2">
-              <a
-                href={featured.ctaLink}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition-all group/btn"
-              >
+              <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/90 text-white text-xs font-bold rounded-xl shadow-md cursor-default">
                 <span>{featured.ctaText}</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
-              </a>
+              </span>
             </div>
           </div>
         </div>
@@ -143,7 +132,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                 return (
                   <div
                     key={evt.id}
-                    className="bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 group"
+                    className="bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 select-none"
                   >
                     <div className="flex items-center gap-3">
                       {/* Date Badge Box */}
@@ -164,7 +153,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
                       {/* Event Details */}
                       <div>
-                        <h5 className="font-extrabold text-blue-950 text-xs sm:text-sm leading-snug group-hover:text-blue-600 transition-colors">
+                        <h5 className="font-extrabold text-blue-950 text-xs sm:text-sm leading-snug">
                           {evt.title}
                         </h5>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-slate-500 text-xs font-medium mt-0.5">

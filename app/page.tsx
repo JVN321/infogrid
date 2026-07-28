@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { defaultSkeletonData, PortalData } from "@/data/skeletonData";
 import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
@@ -15,7 +15,47 @@ export default function Home() {
   const [isSkeleton, setIsSkeleton] = useState(false);
   const [is916View, setIs916View] = useState(false);
 
+  useEffect(() => {
+    // 1. Check LocalStorage sync
+    const local = localStorage.getItem("infogrid_portal_data");
+    if (local) {
+      try {
+        const parsed = JSON.parse(local);
+        setData((prev) => ({ ...prev, ...parsed }));
+      } catch (e) {
+        console.error("Localstorage parse error", e);
+      }
+    }
+
+    // 2. Fetch live data from Supabase DB via Prisma API if available
+    async function syncFromApi() {
+      try {
+        const [newsRes, achRes] = await Promise.all([
+          fetch("/api/news"),
+          fetch("/api/achievements"),
+        ]);
+
+        if (newsRes.ok && achRes.ok) {
+          const newsData = await newsRes.json();
+          const achData = await achRes.json();
+
+          if (Array.isArray(newsData) && newsData.length > 0) {
+            setData((prev) => ({ ...prev, news: newsData }));
+          }
+          if (Array.isArray(achData) && achData.length > 0) {
+            setData((prev) => ({ ...prev, achievements: achData }));
+          }
+        }
+      } catch (err) {
+        console.warn("API sync error, using local data", err);
+      }
+    }
+
+    syncFromApi();
+  }, []);
+
   const handleResetDefaults = () => {
+    localStorage.removeItem("infogrid_portal_data");
     setData(defaultSkeletonData);
   };
 
@@ -25,7 +65,7 @@ export default function Home() {
         is916View ? "h-screen max-h-screen overflow-hidden" : ""
       }`}
     >
-      {/* Floating Toolbar for Live JSON Editing, Skeleton Toggle & 9:16 Mode */}
+      {/* Floating Toolbar for Live JSON Editing, Admin Navigation & 9:16 Mode */}
       <SkeletonController
         data={data}
         setData={setData}

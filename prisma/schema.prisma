@@ -1,0 +1,32 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model NewsItem {
+  id          String   @id @default(cuid())
+  tag         String   @default("NEWS")
+  tagColor    String   @default("blue")
+  title       String
+  description String
+  date        String
+  image       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AchievementItem {
+  id          String   @id @default(cuid())
+  badgeType   String   @default("trophy") // trophy, medal, ribbon, star
+  title       String
+  description String
+  date        String
+  image       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

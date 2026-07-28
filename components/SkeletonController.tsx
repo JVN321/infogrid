@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { PortalData } from "@/data/skeletonData";
-import { Code, Eye, RefreshCw, Copy, Check, Sliders, Layers, Smartphone } from "lucide-react";
+import { Code, Eye, RefreshCw, Copy, Check, Sliders, Layers, Smartphone, LayoutDashboard } from "lucide-react";
 
 interface SkeletonControllerProps {
   data: PortalData;
@@ -49,6 +50,16 @@ export const SkeletonController: React.FC<SkeletonControllerProps> = ({
     <>
       {/* Top Floating Control Bar */}
       <div className="fixed top-2 right-2 sm:top-3 sm:right-3 z-50 flex items-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-200/90 shadow-md text-xs">
+        {/* Link to Admin Page */}
+        <Link
+          href="/admin"
+          className="flex items-center gap-1 px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold rounded-full transition-all shadow-2xs"
+          title="Open Admin Dashboard"
+        >
+          <LayoutDashboard className="w-3 h-3 text-blue-400" />
+          <span>Admin Dashboard</span>
+        </Link>
+
         {/* Toggle 9:16 Frame Preview */}
         <button
           onClick={() => setIs916View(!is916View)}
