@@ -989,6 +989,10 @@ export default function AdminPage() {
     const updatedList = heroSlidesList.filter((item) => item.id !== id);
     setHeroSlidesList(updatedList);
 
+    if (editingHeroId === id) {
+      resetHeroForm();
+    }
+
     if (isDbConnected) {
       try {
         await fetch(`/api/hero-slides?id=${id}`, { method: "DELETE" });
