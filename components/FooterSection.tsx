@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { PortalData } from "@/data/skeletonData";
 import { Quote } from "lucide-react";
 
@@ -95,8 +96,8 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
 
           {/* QR Code Container */}
           <div className="flex flex-col items-center flex-shrink-0">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-xl flex items-center justify-center overflow-hidden">
-              <img src="/qr-code.png" alt="QR Code" className="w-full h-full object-contain scale-105" />
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-xl flex items-center justify-center overflow-hidden">
+              <Image src="/qr-code.png" alt="QR Code" fill className="object-contain scale-105" />
             </div>
           </div>
         </div>

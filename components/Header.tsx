@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { HeaderInfo } from "@/data/skeletonData";
 import { Clock, Calendar } from "lucide-react";
 
@@ -34,10 +35,12 @@ export const Header: React.FC<HeaderProps> = ({ data, isSkeleton }) => {
         {/* Left: Department Logo */}
         <div className="flex items-center justify-center sm:justify-start w-full sm:w-auto">
           <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
-            <img
+            <Image
               src="/Departmentlogo.png"
               alt="Department Logo"
-              className="w-full h-full object-contain"
+              fill
+              priority
+              className="object-contain"
             />
           </div>
         </div>
@@ -45,10 +48,12 @@ export const Header: React.FC<HeaderProps> = ({ data, isSkeleton }) => {
         {/* Center: College Logo & Name */}
         <div className="flex flex-1 items-center justify-center gap-3 text-center sm:text-left w-full sm:w-auto">
           <div className="relative w-16 h-18 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
-            <img
+            <Image
               src="/MuthootLogo.png"
               alt="Muthoot Logo"
-              className="w-full h-full object-contain"
+              fill
+              priority
+              className="object-contain"
             />
           </div>
 

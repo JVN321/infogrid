@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import { NewsItem, GeneralNewsItem } from "@/data/skeletonData";
 import { Calendar } from "lucide-react";
 
@@ -110,10 +111,12 @@ export const NewsSection: React.FC<NewsSectionProps> = ({
               >
                 <div className="flex flex-col flex-1 justify-start">
                   <div className="relative rounded-xl overflow-hidden mb-2.5 h-32 sm:h-34 bg-slate-100 flex-shrink-0">
-                    <img
+                    <Image
                       src={item.image}
                       alt={item.title}
-                      className="w-full h-full object-cover object-center transition-transform duration-500 hover:scale-105"
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-cover object-center transition-transform duration-500 hover:scale-105"
                     />
                   </div>
                   <div className="mb-1.5 h-5 flex items-center justify-between flex-shrink-0">

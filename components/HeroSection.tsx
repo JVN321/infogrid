@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { HeroSlide } from "@/data/skeletonData";
 
 interface HeroSectionProps {
@@ -92,11 +93,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             isFading ? "opacity-0 scale-95" : "opacity-100 scale-100"
           }`}
         >
-          <div className="relative rounded-2xl overflow-hidden shadow-md border-2 border-white group">
-            <img
+          <div className="relative w-full h-36 sm:h-48 md:h-56 lg:h-64 rounded-2xl overflow-hidden shadow-md border-2 border-white group">
+            <Image
               src={slide.image}
               alt={slide.titleHighlight}
-              className="w-full h-36 sm:h-48 md:h-56 lg:h-64 object-cover object-center transform group-hover:scale-105 transition-transform duration-700"
+              fill
+              priority={currentSlide === 0}
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover object-center transform group-hover:scale-105 transition-transform duration-700"
             />
           </div>
         </div>

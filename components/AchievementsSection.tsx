@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { AchievementItem } from "@/data/skeletonData";
 import { Trophy, Medal, Award, Star } from "lucide-react";
 
@@ -96,10 +97,12 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
                 <div>
                   {/* Thumbnail Image */}
                   <div className="relative rounded-xl overflow-hidden mb-2.5 aspect-16/10 bg-slate-100">
-                    <img
+                    <Image
                       src={item.image}
                       alt={item.title}
-                      className="w-full h-full object-cover object-center"
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-cover object-center"
                     />
                   </div>
 

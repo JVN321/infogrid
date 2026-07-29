@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { FeaturedEvent, UpcomingEvent } from "@/data/skeletonData";
 import { Calendar, Clock, MapPin, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 
@@ -185,10 +186,12 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
         <div className={`lg:col-span-5 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-3.5 sm:p-5 min-h-[200px] sm:min-h-[230px] border border-blue-900/30 select-none group bg-slate-900 transition-all duration-300 transform ${
           isFading ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"
         }`}>
-          <img
+          <Image
             src={activeFeatured.image}
             alt={activeFeatured.title}
-            className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+            fill
+            sizes="(max-width: 1024px) 100vw, 40vw"
+            className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-blue-950/80 to-blue-950/40"></div>
 
@@ -201,13 +204,17 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             {/* Event Link QR Code Overlay Box */}
             {activeFeatured.ctaLink && activeFeatured.ctaLink !== "#" && (
               <div className="flex flex-col items-center bg-white/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200 shadow-lg group-hover:scale-105 transition-transform">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                    activeFeatured.ctaLink
-                  )}`}
-                  alt="Scan QR for Event"
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-contain bg-white p-0.5"
-                />
+                <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden bg-white p-0.5">
+                  <Image
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                      activeFeatured.ctaLink
+                    )}`}
+                    alt="Scan QR for Event"
+                    width={56}
+                    height={56}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
                 <span className="text-[8px] font-black text-blue-950 uppercase tracking-tighter mt-1">
                   SCAN TO REGISTER
                 </span>
@@ -309,11 +316,15 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {/* Mini QR Code Preview on Event Card */}
                     <div className="hidden sm:flex items-center gap-1 bg-slate-50 border border-slate-200 p-0.5 rounded-lg group-hover:border-blue-300 transition-colors" title="Scan to open on Grid">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(eventUrl)}`}
-                        alt="QR Code"
-                        className="w-7 h-7 rounded-md object-contain bg-white"
-                      />
+                      <div className="relative w-7 h-7 rounded-md overflow-hidden bg-white">
+                        <Image
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(eventUrl)}`}
+                          alt="QR Code"
+                          width={28}
+                          height={28}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
                     </div>
 
                     <span

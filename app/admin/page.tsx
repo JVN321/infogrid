@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import NextImage from "next/image";
 import { NewsItem, GeneralNewsItem, AchievementItem, UpcomingEvent, HeroSlide, defaultSkeletonData } from "@/data/skeletonData";
 import {
   Newspaper,
@@ -1886,11 +1887,15 @@ export default function AdminPage() {
                         key={item.id}
                         className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center gap-4 group hover:border-slate-700 transition-colors"
                       >
-                        <img
-                          src={item.image}
-                          alt="Hero"
-                          className="w-20 h-14 object-cover rounded-lg border border-slate-800 bg-slate-900 flex-shrink-0"
-                        />
+                        <div className="relative w-20 h-14 rounded-lg overflow-hidden border border-slate-800 bg-slate-900 flex-shrink-0">
+                          <NextImage
+                            src={item.image}
+                            alt="Hero"
+                            fill
+                            sizes="80px"
+                            className="object-cover"
+                          />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm font-bold text-white truncate flex items-center gap-2">
                             <span className="text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-400 border border-blue-800/50">
@@ -2046,11 +2051,15 @@ export default function AdminPage() {
                       className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 group hover:border-slate-700 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-slate-900"
-                        />
+                        <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-slate-900">
+                          <NextImage
+                            src={item.image}
+                            alt={item.title}
+                            fill
+                            sizes="56px"
+                            className="object-cover"
+                          />
+                        </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <span className="px-2 py-0.5 text-[9px] font-black rounded bg-blue-950 text-blue-400 border border-blue-800 uppercase">
@@ -2097,11 +2106,15 @@ export default function AdminPage() {
                       className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 group hover:border-slate-700 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-slate-900"
-                        />
+                        <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-slate-900">
+                          <NextImage
+                            src={item.image}
+                            alt={item.title}
+                            fill
+                            sizes="56px"
+                            className="object-cover"
+                          />
+                        </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <span className="px-2 py-0.5 text-[9px] font-black rounded bg-purple-950 text-purple-400 border border-purple-800 uppercase">
@@ -2222,11 +2235,15 @@ export default function AdminPage() {
                       className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between gap-3 group hover:border-slate-700 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-slate-900"
-                        />
+                        <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-slate-900">
+                          <NextImage
+                            src={item.image}
+                            alt={item.title}
+                            fill
+                            sizes="56px"
+                            className="object-cover"
+                          />
+                        </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <span className="px-2 py-0.5 text-[9px] font-black rounded bg-amber-950 text-amber-400 border border-amber-800 uppercase">
@@ -2273,8 +2290,8 @@ export default function AdminPage() {
                       <p className="text-slate-400 font-medium text-xs">{heroForm.tagline}</p>
                     </div>
                     {heroForm.image && (
-                      <div className="mt-4 rounded-lg overflow-hidden border border-slate-700 h-32 bg-slate-950">
-                        <img src={heroForm.image} alt="Hero image" className="w-full h-full object-cover" />
+                      <div className="relative mt-4 rounded-lg overflow-hidden border border-slate-700 h-32 bg-slate-950">
+                        <NextImage src={heroForm.image} alt="Hero image" fill sizes="100vw" className="object-cover" />
                       </div>
                     )}
                   </div>
