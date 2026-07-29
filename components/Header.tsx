@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { HeaderInfo } from "@/data/skeletonData";
 import { Clock, Calendar } from "lucide-react";
@@ -10,7 +10,51 @@ interface HeaderProps {
   isSkeleton?: boolean;
 }
 
+function getISTDateTime() {
+  const now = new Date();
+
+  const liveTime = now.toLocaleTimeString("en-US", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+
+  const liveDay = now.toLocaleDateString("en-US", {
+    timeZone: "Asia/Kolkata",
+    weekday: "long",
+  });
+
+  const liveDate = now.toLocaleDateString("en-GB", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  return { liveTime, liveDay, liveDate };
+}
+
 export const Header: React.FC<HeaderProps> = ({ data, isSkeleton }) => {
+  const [timeInfo, setTimeInfo] = useState({
+    liveTime: data.liveTime || "",
+    liveDay: data.liveDay || "",
+    liveDate: data.liveDate || "",
+  });
+
+  useEffect(() => {
+    // Initial sync on mount
+    setTimeInfo(getISTDateTime());
+
+    // Update every second in realtime
+    const interval = setInterval(() => {
+      setTimeInfo(getISTDateTime());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   if (isSkeleton) {
     return (
       <header className="bg-white border-b border-slate-100 py-3 px-4 shadow-2xs animate-pulse flex-shrink-0">
@@ -73,13 +117,13 @@ export const Header: React.FC<HeaderProps> = ({ data, isSkeleton }) => {
         {/* Right: Date & Live Time Box */}
         <div className="flex items-center justify-center sm:justify-end w-full sm:w-auto">
           <div className="bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs flex items-center gap-3 text-right">
-            <div className="flex items-center gap-1.5 text-blue-950 font-extrabold text-sm sm:text-base leading-tight">
-              <Clock className="w-4 h-4 text-blue-600" />
-              <span>{data.liveTime}</span>
+            <div className="flex items-center gap-1.5 text-blue-950 font-extrabold text-sm sm:text-base leading-tight tabular-nums">
+              <Clock className="w-4 h-4 text-blue-600 animate-pulse" />
+              <span>{timeInfo.liveTime}</span>
             </div>
             <div className="flex flex-col text-[10px] text-slate-600 font-semibold border-l border-slate-200 pl-2.5">
-              <span>{data.liveDay}</span>
-              <span>{data.liveDate}</span>
+              <span>{timeInfo.liveDay}</span>
+              <span>{timeInfo.liveDate}</span>
             </div>
           </div>
         </div>
