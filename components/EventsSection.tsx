@@ -195,50 +195,49 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-blue-950/80 to-blue-950/40"></div>
 
-          {/* Top Row: Badge & QR Code Overlay */}
+          {/* Top Row: Badge */}
           <div className="relative z-10 flex items-start justify-between">
             <span className="inline-block px-2.5 py-0.5 bg-blue-600/90 text-white text-[11px] font-bold rounded-full backdrop-blur-xs shadow-xs border border-blue-400/40">
               {activeFeatured.badge}
             </span>
+          </div>
 
+          {/* Bottom Details with QR Code on Bottom Left */}
+          <div className="relative z-10 flex items-center gap-3 pt-3">
             {/* Event Link QR Code Overlay Box */}
             {activeFeatured.ctaLink && activeFeatured.ctaLink !== "#" && (
-              <div className="flex flex-col items-center bg-white/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200 shadow-lg group-hover:scale-105 transition-transform">
-                <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden bg-white p-0.5">
+              <div className="flex flex-col items-center bg-white/95 backdrop-blur-md p-1 rounded-lg shadow-lg group-hover:scale-105 transition-transform overflow-hidden flex-shrink-0">
+                <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden bg-white">
                   <Image
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                    src={`https://api.qrserver.com/v1/create-qr-code/?margin=1&size=150x150&data=${encodeURIComponent(
                       activeFeatured.ctaLink
                     )}`}
                     alt="Scan QR for Event"
-                    width={56}
-                    height={56}
+                    width={64}
+                    height={64}
                     className="w-full h-full object-contain"
                   />
                 </div>
-                <span className="text-[8px] font-black text-blue-950 uppercase tracking-tighter mt-1">
-                  SCAN TO REGISTER
-                </span>
               </div>
             )}
-          </div>
 
-          {/* Bottom Details */}
-          <div className="relative z-10 space-y-1.5 pt-4">
-            <h4 className="text-lg sm:text-xl font-black text-white tracking-tight uppercase leading-tight line-clamp-1">
-              {activeFeatured.title}
-            </h4>
-            <p className="text-blue-200 font-semibold text-xs line-clamp-1">
-              {activeFeatured.tagline}
-            </p>
+            <div className="space-y-1 min-w-0 flex-1">
+              <h4 className="text-base sm:text-lg font-black text-white tracking-tight uppercase leading-tight line-clamp-1">
+                {activeFeatured.title}
+              </h4>
+              <p className="text-blue-200 font-semibold text-xs line-clamp-1">
+                {activeFeatured.tagline}
+              </p>
 
-            <div className="flex items-center gap-3 text-[11px] text-slate-300 pt-0.5">
-              <div className="flex items-center gap-1">
-                <Calendar className="w-3 h-3 text-blue-400" />
-                <span>{activeFeatured.dateRange}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-blue-400" />
-                <span className="line-clamp-1">{activeFeatured.venue}</span>
+              <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-300 pt-0.5">
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-blue-400 flex-shrink-0" />
+                  <span>{activeFeatured.dateRange}</span>
+                </div>
+                <div className="flex items-center gap-1 min-w-0">
+                  <MapPin className="w-3 h-3 text-blue-400 flex-shrink-0" />
+                  <span className="line-clamp-1">{activeFeatured.venue}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -312,7 +311,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                     </div>
                   </div>
 
-                  {/* Event Action, QR Code & Category */}
+                  {/* Event Action & Category */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {/* Mini QR Code Preview on Event Card */}
                     <div className="hidden sm:flex items-center gap-1 bg-slate-50 border border-slate-200 p-0.5 rounded-lg group-hover:border-blue-300 transition-colors" title="Scan to open on Grid">
@@ -326,7 +325,6 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                         />
                       </div>
                     </div>
-
                     <span
                       className={`hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold rounded-lg border ${evt.categoryBadgeBg}`}
                     >

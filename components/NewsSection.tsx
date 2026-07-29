@@ -69,8 +69,12 @@ export const NewsSection: React.FC<NewsSectionProps> = ({
 
   const currentItems = useMemo(() => {
     const list = currentMode === "campus" ? news : generalNews;
-    const start = currentPage * ITEMS_PER_PAGE;
-    return list.slice(start, start + ITEMS_PER_PAGE);
+    if (!list || list.length === 0) return [];
+    if (list.length <= ITEMS_PER_PAGE) return list;
+    const startIndex = currentPage * ITEMS_PER_PAGE;
+    return Array.from({ length: ITEMS_PER_PAGE }).map((_, j) => {
+      return list[(startIndex + j) % list.length];
+    });
   }, [currentMode, currentPage, news, generalNews]);
 
   // If no items in either, we'll render empty campus news
