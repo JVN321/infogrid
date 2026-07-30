@@ -445,6 +445,144 @@ export default function AdminPage() {
     }
   };
 
+  // Add fetched news item directly to General News
+  const handleAddFetchedItemToGenNews = async (article: any) => {
+    const exists = generalNewsList.some(
+      (item) => item.title.trim().toLowerCase() === article.title.trim().toLowerCase()
+    );
+    if (exists) {
+      showNotify(`"${article.title.substring(0, 30)}..." is already in General News!`, "info");
+      return;
+    }
+
+    const newItem: GeneralNewsItem = {
+      id: `gen-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      tag: article.tag || "GLOBAL",
+      tagColor: article.tagColor || "purple",
+      title: article.title,
+      description: article.description,
+      date: article.date || new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      image: article.image || "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&q=80",
+      source: article.source || "External News",
+      url: article.url || "#",
+    };
+
+    const updatedList = [newItem, ...generalNewsList];
+    setGeneralNewsList(updatedList);
+
+    if (isDbConnected) {
+      try {
+        const res = await fetch("/api/general-news", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newItem),
+        });
+        const created = await res.json();
+        if (created.id) newItem.id = created.id;
+      } catch (e) {
+        console.error("Prisma create error:", e);
+      }
+    }
+
+    syncToLocalStorage(newsList, updatedList, achievementsList, eventsList);
+    showNotify(`Published "${article.title.substring(0, 35)}..." directly into General News!`, "success");
+  };
+
+  // Add fetched news item directly to Campus News
+  const handleAddFetchedItemToCampusNews = async (article: any) => {
+    const exists = newsList.some(
+      (item) => item.title.trim().toLowerCase() === article.title.trim().toLowerCase()
+    );
+    if (exists) {
+      showNotify(`"${article.title.substring(0, 30)}..." is already in Campus News!`, "info");
+      return;
+    }
+
+    const newItem: NewsItem = {
+      id: `news-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      tag: article.tag || "NEWS",
+      tagColor: article.tagColor || "blue",
+      title: article.title,
+      description: article.description,
+      date: article.date || new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      image: article.image || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=600&q=80",
+    };
+
+    const updatedList = [newItem, ...newsList];
+    setNewsList(updatedList);
+
+    if (isDbConnected) {
+      try {
+        const res = await fetch("/api/news", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newItem),
+        });
+        const created = await res.json();
+        if (created.id) newItem.id = created.id;
+      } catch (e) {
+        console.error("Prisma create error:", e);
+      }
+    }
+
+    syncToLocalStorage(updatedList, generalNewsList, achievementsList, eventsList);
+    showNotify(`Published "${article.title.substring(0, 35)}..." directly into Campus News!`, "success");
+  };
+
+  // Auto-import top fetched news into General News
+  const handleAutoAddTopNews = async () => {
+    if (!fetchedNews || fetchedNews.length === 0) {
+      showNotify("No fetched news available to auto-import.", "error");
+      return;
+    }
+
+    let addedCount = 0;
+    let currentList = [...generalNewsList];
+
+    for (const article of fetchedNews.slice(0, 5)) {
+      const exists = currentList.some(
+        (item) => item.title.trim().toLowerCase() === article.title.trim().toLowerCase()
+      );
+      if (!exists) {
+        const newItem: GeneralNewsItem = {
+          id: `gen-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          tag: article.tag || "GLOBAL",
+          tagColor: article.tagColor || "purple",
+          title: article.title,
+          description: article.description,
+          date: article.date || new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+          image: article.image || "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&q=80",
+          source: article.source || "External News",
+          url: article.url || "#",
+        };
+
+        currentList = [newItem, ...currentList];
+        addedCount++;
+
+        if (isDbConnected) {
+          try {
+            await fetch("/api/general-news", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(newItem),
+            });
+          } catch (e) {
+            console.error("Prisma bulk create error:", e);
+          }
+        }
+      }
+    }
+
+    setGeneralNewsList(currentList);
+    syncToLocalStorage(newsList, currentList, achievementsList, eventsList);
+
+    if (addedCount > 0) {
+      showNotify(`Successfully auto-imported ${addedCount} trending news articles into General News!`, "success");
+    } else {
+      showNotify("All top fetched news articles already exist in General News!", "info");
+    }
+  };
+
   // Sync state changes to LocalStorage for instant preview sync
   const syncToLocalStorage = (
     updatedNews: NewsItem[],
@@ -1932,6 +2070,208 @@ export default function AdminPage() {
 
         {/* RIGHT COLUMN: Items List & Convex / External Fetcher Tools */}
         <div className="lg:col-span-7 space-y-6">
+          {/* SPECIAL TOOL BANNER FOR EXTERNAL LIVE NEWS IN NEWS & GENERAL NEWS TABS */}
+          {(activeTab === "generalNews" || activeTab === "news") && (
+            <div className="bg-gradient-to-br from-purple-950/90 via-slate-900 to-indigo-950/90 border border-purple-800/80 rounded-3xl p-5 shadow-xl space-y-4">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-purple-900/50 pb-3">
+                <div>
+                  <div className="flex items-center gap-2 text-purple-400 font-extrabold text-xs uppercase tracking-wider mb-1">
+                    <Globe className="w-4 h-4" />
+                    <span>Live External News API Engine</span>
+                    <span className="px-2 py-0.5 text-[9px] font-black rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      NewsAPI.org (Active & Working)
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-black text-white">
+                    Fetch, Search & Auto-Import Live News
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Search global headlines via NewsAPI, preview articles, and publish directly with 1 click.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAutoAddTopNews}
+                  disabled={fetchingNews || fetchedNews.length === 0}
+                  className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-extrabold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider flex-shrink-0"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>⚡ Auto-Import Top News</span>
+                </button>
+              </div>
+
+              {/* Search Controls & Topic Chips */}
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="Search news topic e.g. technology, AI, college, space..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          autoFetchExternalNews(searchQuery);
+                        }
+                      }}
+                      className="w-full text-xs p-3 pl-9 bg-slate-950 border border-purple-900/60 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-slate-500"
+                    />
+                    <Search className="w-4 h-4 text-purple-400 absolute left-3 top-3.5" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => autoFetchExternalNews(searchQuery)}
+                    disabled={fetchingNews}
+                    className="px-4 py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
+                  >
+                    {fetchingNews ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Search className="w-4 h-4" />
+                    )}
+                    <span>Search News</span>
+                  </button>
+                </div>
+
+                {/* Quick Topic Chips */}
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="text-slate-400 font-semibold text-[11px] mr-1">Quick Topics:</span>
+                  {["Technology", "AI & Tech", "Education", "Science", "Robotics", "Cybersecurity"].map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery(chip);
+                        autoFetchExternalNews(chip);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border ${
+                        searchQuery.toLowerCase() === chip.toLowerCase()
+                          ? "bg-purple-600 text-white border-purple-500"
+                          : "bg-slate-950/80 text-purple-300 border-purple-900/40 hover:border-purple-700 hover:bg-purple-950/40"
+                      }`}
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fetched News Results List */}
+              <div className="pt-2">
+                <div className="flex items-center justify-between text-xs mb-2">
+                  <span className="font-extrabold text-slate-300 uppercase tracking-wider">
+                    Fetched Live News ({fetchedNews.length} Results)
+                  </span>
+                  {fetchingNews && (
+                    <span className="text-purple-400 font-semibold flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3 animate-spin" /> Fetching latest headlines...
+                    </span>
+                  )}
+                </div>
+
+                {fetchedNews.length === 0 ? (
+                  <div className="p-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-center text-xs text-slate-400">
+                    No articles fetched. Click search or select a topic above.
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                    {fetchedNews.map((article: any, idx: number) => {
+                      const isGenNewsAdded = generalNewsList.some(
+                        (item) => item.title.trim().toLowerCase() === article.title.trim().toLowerCase()
+                      );
+                      const isCampusNewsAdded = newsList.some(
+                        (item) => item.title.trim().toLowerCase() === article.title.trim().toLowerCase()
+                      );
+
+                      return (
+                        <div
+                          key={article.id || `fetched-${idx}`}
+                          className="p-3 bg-slate-950/90 border border-purple-900/30 rounded-2xl flex flex-col sm:flex-row items-start gap-3 hover:border-purple-700/60 transition-colors"
+                        >
+                          <div className="relative w-full sm:w-24 h-20 rounded-xl overflow-hidden bg-slate-900 flex-shrink-0">
+                            <NextImage
+                              src={article.image}
+                              alt={article.title}
+                              fill
+                              sizes="96px"
+                              className="object-cover"
+                            />
+                            <span className="absolute top-1 left-1 px-1.5 py-0.5 text-[8px] font-black rounded bg-black/80 text-purple-300 border border-purple-800 uppercase truncate max-w-[80px]">
+                              {article.source || "News"}
+                            </span>
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="px-2 py-0.5 text-[9px] font-black rounded bg-purple-950 text-purple-400 border border-purple-800 uppercase">
+                                {article.tag || "NEWS"}
+                              </span>
+                              <span className="text-[10px] text-slate-400">{article.date}</span>
+                            </div>
+                            <h4 className="font-extrabold text-white text-xs line-clamp-1">{article.title}</h4>
+                            <p className="text-slate-400 text-[11px] line-clamp-2 mt-0.5">{article.description}</p>
+
+                            <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleAddFetchedItemToGenNews(article)}
+                                disabled={isGenNewsAdded}
+                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
+                                  isGenNewsAdded
+                                    ? "bg-slate-800 text-slate-400 cursor-not-allowed"
+                                    : "bg-purple-600 hover:bg-purple-500 text-white shadow"
+                                }`}
+                              >
+                                {isGenNewsAdded ? (
+                                  <>
+                                    <Check className="w-3 h-3 text-emerald-400" />
+                                    <span>In General News</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="w-3 h-3" />
+                                    <span>Add Directly to General News</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleAddFetchedItemToCampusNews(article)}
+                                disabled={isCampusNewsAdded}
+                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
+                                  isCampusNewsAdded
+                                    ? "bg-slate-800 text-slate-400 cursor-not-allowed"
+                                    : "bg-blue-900/60 hover:bg-blue-800/80 text-blue-300 border border-blue-700/60"
+                                }`}
+                              >
+                                {isCampusNewsAdded ? (
+                                  <>
+                                    <Check className="w-3 h-3 text-emerald-400" />
+                                    <span>In Campus News</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="w-3 h-3" />
+                                    <span>Add to Campus News</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* SPECIAL TOOL BANNER FOR CONVEX EVENTS SYNC IN EVENTS TAB */}
           {activeTab === "events" && (
             <div className="bg-gradient-to-br from-sky-950/90 via-slate-900 to-blue-950/90 border border-sky-800/80 rounded-3xl p-5 shadow-xl relative overflow-hidden">
