@@ -1911,87 +1911,142 @@ export default function AdminPage() {
               </button>
             </form>
           ) : (
-            /* HERO FORM */
-            <div className="space-y-4">
-              <form onSubmit={handleSaveHero} className="space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <h3 className="font-extrabold text-base text-white flex items-center gap-2">
-                    {isEditingHero ? <Edit className="w-4 h-4 text-blue-400" /> : <Plus className="w-4 h-4 text-blue-400" />}
-                    <span>{isEditingHero ? "Edit Hero Slide" : "Add New Hero Slide"}</span>
-                  </h3>
-                  {isEditingHero && (
-                    <button
-                      type="button"
-                      onClick={resetHeroForm}
-                      className="text-xs text-rose-400 hover:underline font-semibold"
-                    >
-                      Cancel Edit
-                    </button>
+            /* ══════════════ HERO FORM ══════════════ */
+            <div className="space-y-5">
+
+              {/* Form Header */}
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="font-extrabold text-base text-white flex items-center gap-2">
+                  {isEditingHero
+                    ? <><Edit className="w-4 h-4 text-blue-400" /><span>Edit Hero Slide</span></>
+                    : <><Sparkles className="w-4 h-4 text-blue-400" /><span>Add New Hero Slide</span></>}
+                </h3>
+                {isEditingHero && (
+                  <button
+                    type="button"
+                    onClick={resetHeroForm}
+                    className="text-xs text-rose-400 hover:text-rose-300 font-bold border border-rose-900/50 px-2.5 py-1 rounded-lg hover:bg-rose-950/40 transition-all"
+                  >
+                    ✕ Cancel Edit
+                  </button>
+                )}
+              </div>
+
+              {/* Live Preview Banner */}
+              <div className="relative w-full h-28 rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 flex-shrink-0 group">
+                {heroForm.image ? (
+                  <NextImage
+                    src={heroForm.image}
+                    alt="Preview"
+                    fill
+                    sizes="100%"
+                    className="object-cover opacity-50"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+                    <ImageIcon className="w-8 h-8 text-slate-700" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-3">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">Live Preview</p>
+                  <p className="text-white text-sm font-black leading-tight truncate">
+                    {heroForm.welcomeText || "Welcome to"}{" "}
+                    <span className="text-blue-400">{heroForm.titleHighlight || "InfoGrid"}</span>
+                  </p>
+                  {heroForm.tagline && (
+                    <p className="text-slate-300 text-[11px] truncate mt-0.5">{heroForm.tagline}</p>
                   )}
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Welcome Text *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Welcome to"
-                      value={heroForm.welcomeText}
-                      onChange={(e) => setHeroForm({ ...heroForm, welcomeText: e.target.value })}
-                      className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Title Highlight *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. InfoGrid Community"
-                      value={heroForm.titleHighlight}
-                      onChange={(e) => setHeroForm({ ...heroForm, titleHighlight: e.target.value })}
-                      className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    />
-                  </div>
+                <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/60 text-[9px] font-bold text-blue-300 border border-blue-800/50">
+                  SLIDE #{heroForm.orderIndex}
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Tagline</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Stay informed. Stay inspired."
-                      value={heroForm.tagline}
-                      onChange={(e) => setHeroForm({ ...heroForm, tagline: e.target.value })}
-                      className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Sort Order</label>
-                    <input
-                      type="number"
-                      required
-                      value={heroForm.orderIndex}
-                      onChange={(e) => setHeroForm({ ...heroForm, orderIndex: parseInt(e.target.value) || 0 })}
-                      className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
+              <form onSubmit={handleSaveHero} className="space-y-4">
 
+                {/* Welcome Text + Title Highlight */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Image URL or Supabase Storage Upload</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Hero Title *
+                    <span className="ml-1.5 text-slate-500 font-normal">— displays as two parts</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Welcome to"
+                        value={heroForm.welcomeText}
+                        onChange={(e) => setHeroForm({ ...heroForm, welcomeText: e.target.value })}
+                        className="w-full text-xs p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-600 transition-all"
+                      />
+                      <p className="text-[10px] text-slate-600 mt-1 ml-0.5">Prefix text</p>
+                    </div>
+                    <div className="w-8 flex items-start justify-center pt-2.5 text-slate-600 font-bold text-sm">+</div>
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        required
+                        placeholder="InfoGrid"
+                        value={heroForm.titleHighlight}
+                        onChange={(e) => setHeroForm({ ...heroForm, titleHighlight: e.target.value })}
+                        className="w-full text-xs p-2.5 bg-slate-950 border border-blue-800/60 rounded-xl text-blue-300 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-600 transition-all"
+                      />
+                      <p className="text-[10px] text-blue-700 mt-1 ml-0.5">Highlighted text (blue)</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tagline */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">Tagline / Subtitle</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Stay informed. Stay inspired."
+                    value={heroForm.tagline}
+                    onChange={(e) => setHeroForm({ ...heroForm, tagline: e.target.value })}
+                    className="w-full text-xs p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-600 transition-all"
+                  />
+                </div>
+
+                {/* Sort Order */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Display Order
+                    <span className="ml-1.5 text-slate-500 font-normal">— lower number shows first</span>
+                  </label>
+                  <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setHeroForm({ ...heroForm, orderIndex: Math.max(0, heroForm.orderIndex - 1) })}
+                      className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-colors text-sm"
+                    >−</button>
+                    <span className="flex-1 text-center font-black text-blue-400 text-base">{heroForm.orderIndex}</span>
+                    <button
+                      type="button"
+                      onClick={() => setHeroForm({ ...heroForm, orderIndex: heroForm.orderIndex + 1 })}
+                      className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-colors text-sm"
+                    >+</button>
+                  </div>
+                </div>
+
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Background Image *
+                  </label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       required
-                      placeholder="https://..."
+                      placeholder="https://images.unsplash.com/..."
                       value={heroForm.image}
                       onChange={(e) => setHeroForm({ ...heroForm, image: e.target.value })}
-                      className="flex-1 text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="flex-1 text-xs p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-600 transition-all"
                     />
-                    <label className="px-3 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl cursor-pointer flex items-center justify-center transition-colors">
-                      <Upload className="w-4 h-4" />
+                    <label className="px-3 py-2.5 bg-slate-800 hover:bg-blue-900/60 border border-slate-700 hover:border-blue-700 text-slate-300 hover:text-blue-300 rounded-xl cursor-pointer flex items-center justify-center gap-1.5 transition-all whitespace-nowrap text-[11px] font-bold">
+                      <Upload className="w-3.5 h-3.5" />
+                      Upload
                       <input
                         type="file"
                         accept="image/*"
@@ -2000,73 +2055,115 @@ export default function AdminPage() {
                       />
                     </label>
                   </div>
+                  <p className="text-[10px] text-slate-600 mt-1">Paste a URL or upload from your device. Recommended: 1920×1080 landscape.</p>
                 </div>
 
+                {/* Submit */}
                 <button
                   type="submit"
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+                  className={`w-full py-3 font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wider ${
+                    isEditingHero
+                      ? "bg-blue-600 hover:bg-blue-500 text-white"
+                      : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white"
+                  }`}
                 >
                   {isEditingHero ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                  <span>{isEditingHero ? "Update Hero Slide" : "Add Hero Slide"}</span>
+                  {isEditingHero ? "Save Changes" : "Add Hero Slide"}
                 </button>
               </form>
 
-              {/* HERO SLIDES LIST */}
-              <div className="pt-6 mt-6 border-t border-slate-800">
-                <h3 className="font-extrabold text-sm text-slate-300 uppercase tracking-widest pb-3">
-                  Active Hero Slides
-                </h3>
-                <div className="space-y-3">
-                  {heroSlidesList.length === 0 ? (
-                    <p className="text-xs text-slate-500">No slides configured. Default skeleton may be shown.</p>
-                  ) : (
-                    heroSlidesList.map((item) => (
-                      <div
-                        key={item.id}
-                        className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center gap-4 group hover:border-slate-700 transition-colors"
-                      >
-                        <div className="relative w-20 h-14 rounded-lg overflow-hidden border border-slate-800 bg-slate-900 flex-shrink-0">
-                          <NextImage
-                            src={item.image}
-                            alt="Hero"
-                            fill
-                            sizes="80px"
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-bold text-white truncate flex items-center gap-2">
-                            <span className="text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-400 border border-blue-800/50">
-                              #{item.orderIndex}
-                            </span>
-                            {item.welcomeText} {item.titleHighlight}
-                          </h4>
-                          <p className="text-xs text-slate-400 truncate mt-1">{item.tagline}</p>
-                        </div>
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => handleEditHero(item)}
-                            className="p-2 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-lg transition-colors"
-                            title="Edit"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteHero(item.id.toString())}
-                            className="p-2 bg-slate-800 hover:bg-rose-900/50 text-rose-400 rounded-lg transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))
+              {/* ── Active Slides List ── */}
+              <div className="border-t border-slate-800 pt-5 mt-2">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <Layers className="w-3.5 h-3.5" />
+                    Active Slides ({heroSlidesList.length})
+                  </h4>
+                  {heroSlidesList.length > 1 && (
+                    <span className="text-[10px] text-slate-600 italic">Sorted by display order</span>
                   )}
                 </div>
+
+                {heroSlidesList.length === 0 ? (
+                  <div className="py-8 border border-dashed border-slate-800 rounded-2xl flex flex-col items-center gap-2">
+                    <Sparkles className="w-6 h-6 text-slate-700" />
+                    <p className="text-xs text-slate-500 text-center">No hero slides yet.<br />Add your first slide above.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-0.5">
+                    {heroSlidesList.map((item) => {
+                      const isActive = editingHeroId === item.id;
+                      return (
+                        <div
+                          key={item.id}
+                          className={`relative rounded-2xl overflow-hidden border transition-all group ${
+                            isActive
+                              ? "border-blue-500 ring-2 ring-blue-500/30"
+                              : "border-slate-800 hover:border-slate-600"
+                          }`}
+                        >
+                          {/* Background image strip */}
+                          <div className="relative w-full h-20">
+                            <NextImage
+                              src={item.image}
+                              alt={item.titleHighlight}
+                              fill
+                              sizes="400px"
+                              className="object-cover opacity-40"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/80 to-slate-950/30" />
+
+                            <div className="absolute inset-0 flex items-center gap-3 px-3">
+                              {/* Order badge */}
+                              <div className="w-8 h-8 rounded-xl bg-blue-950 border border-blue-800 flex items-center justify-center flex-shrink-0">
+                                <span className="text-[11px] font-black text-blue-400">#{item.orderIndex ?? 0}</span>
+                              </div>
+
+                              {/* Text content */}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white text-[12px] font-extrabold leading-tight truncate">
+                                  {item.welcomeText}{" "}
+                                  <span className="text-blue-400">{item.titleHighlight}</span>
+                                </p>
+                                <p className="text-slate-400 text-[10px] truncate mt-0.5">{item.tagline || "—"}</p>
+                              </div>
+
+                              {/* Actions */}
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <button
+                                  onClick={() => handleEditHero(item)}
+                                  className="p-1.5 bg-slate-800/80 hover:bg-blue-900/60 text-slate-400 hover:text-blue-400 rounded-lg transition-all border border-slate-700 hover:border-blue-700"
+                                  title="Edit slide"
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteHero(item.id.toString())}
+                                  className="p-1.5 bg-slate-800/80 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 rounded-lg transition-all border border-slate-700 hover:border-rose-800"
+                                  title="Delete slide"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Editing indicator */}
+                            {isActive && (
+                              <div className="absolute top-1.5 right-12 px-2 py-0.5 rounded-full bg-blue-600 text-[9px] font-black text-white uppercase tracking-widest">
+                                Editing
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
+
 
         {/* RIGHT COLUMN: Items List & Convex / External Fetcher Tools */}
         <div className="lg:col-span-7 space-y-6">
