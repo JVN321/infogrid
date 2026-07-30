@@ -74,7 +74,7 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
 
       {/* Grid of Achievement Cards */}
       <div
-        className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 transition-all duration-300 transform ${
+        className={`grid grid-cols-4 gap-4 transition-all duration-300 transform ${
           isFading ? "opacity-0 scale-[0.98] translate-y-1" : "opacity-100 scale-100 translate-y-0"
         }`}
       >

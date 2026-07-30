@@ -51,27 +51,27 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const slide = slides[currentSlide] || slides[0];
 
   return (
-    <section className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-gradient-to-r from-blue-50 via-sky-50/90 to-blue-100/70 border border-blue-100 shadow-2xs my-2 flex-shrink-0 transition-all">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 p-4 sm:p-6 lg:p-8 items-center min-h-0">
+    <section className="relative w-full rounded-3xl overflow-hidden bg-gradient-to-r from-blue-50 via-sky-50/90 to-blue-100/70 border border-blue-100 shadow-2xs my-2 flex-shrink-0 transition-all">
+      <div className="grid grid-cols-12 gap-6 p-6 lg:p-8 items-center min-h-0">
         {/* Left Content */}
         <div
-          className={`lg:col-span-6 z-10 flex flex-col justify-center space-y-1.5 sm:space-y-2 transition-all duration-300 transform ${
+          className={`col-span-6 z-10 flex flex-col justify-center space-y-2 transition-all duration-300 transform ${
             isFading ? "opacity-0 translate-y-1 scale-[0.98]" : "opacity-100 translate-y-0 scale-100"
           }`}
         >
-          <span className="text-slate-500 font-semibold text-xs sm:text-sm lg:text-base tracking-tight">
+          <span className="text-slate-500 font-semibold text-base tracking-tight">
             {slide.welcomeText}
           </span>
-          <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-blue-950 tracking-tight leading-tight">
+          <h2 className="text-3xl lg:text-4xl font-extrabold text-blue-950 tracking-tight leading-tight">
             {slide.titleHighlight}
           </h2>
           <div className="w-10 h-1 bg-blue-600 rounded-full my-1"></div>
-          <p className="text-slate-600 font-medium text-xs sm:text-sm lg:text-base leading-snug">
+          <p className="text-slate-600 font-medium text-base leading-snug">
             {slide.tagline}
           </p>
 
           {/* Slider Pagination Controls */}
-          <div className="flex items-center gap-2 pt-2 sm:pt-3">
+          <div className="flex items-center gap-2 pt-3">
             {slides.map((_, idx) => (
               <button
                 key={idx}
@@ -89,7 +89,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
         {/* Right Banner Image */}
         <div
-          className={`lg:col-span-6 relative z-10 flex-1 transition-all duration-300 transform ${
+          className={`col-span-6 relative z-10 flex-1 transition-all duration-300 transform ${
             isFading ? "opacity-0 scale-95" : "opacity-100 scale-100"
           }`}
         >

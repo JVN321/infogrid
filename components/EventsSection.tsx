@@ -181,9 +181,9 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
       </div>
 
       {/* 2 Column Split Layout - Constrained Height for 9:16 Screens */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
+      <div className="grid grid-cols-12 gap-3 items-stretch">
         {/* Left Column: Featured Event Card Banner */}
-        <div className={`lg:col-span-5 relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-3.5 sm:p-5 min-h-[200px] sm:min-h-[230px] border border-blue-900/30 select-none group bg-slate-900 transition-all duration-300 transform ${
+        <div className={`col-span-5 relative rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-5 min-h-[230px] border border-blue-900/30 select-none group bg-slate-900 transition-all duration-300 transform ${
           isFading ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"
         }`}>
           <Image
@@ -222,7 +222,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             )}
 
             <div className="space-y-1 min-w-0 flex-1">
-              <h4 className="text-base sm:text-lg font-black text-white tracking-tight uppercase leading-tight line-clamp-1">
+              <h4 className="text-lg font-black text-white tracking-tight uppercase leading-tight line-clamp-1">
                 {activeFeatured.title}
               </h4>
               <p className="text-blue-200 font-semibold text-xs line-clamp-1">
@@ -245,7 +245,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
         {/* Right Column: Upcoming Events Looping Carousel Container */}
         <div
-          className={`lg:col-span-7 flex flex-col justify-between space-y-2 transition-all duration-300 transform ${
+          className={`col-span-7 flex flex-col justify-between space-y-2 transition-all duration-300 transform ${
             isFading ? "opacity-0 translate-x-1 scale-[0.99]" : "opacity-100 translate-x-0 scale-100"
           }`}
           onMouseEnter={() => setIsPaused(true)}

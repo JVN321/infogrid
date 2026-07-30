@@ -29,18 +29,18 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
   return (
     <footer className="mt-4 sm:mt-6 flex-shrink-0">
       {/* Upper Grid Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-4 items-stretch">
+      <div className="grid grid-cols-12 gap-4 mb-4 items-stretch">
         {/* Left: Quote Card */}
-        <div className="lg:col-span-7 relative rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-50/90 via-sky-50/60 to-blue-100/50 p-4 sm:p-6 border border-blue-100/80 shadow-2xs overflow-hidden flex flex-col justify-center">
+        <div className="col-span-7 relative rounded-3xl bg-gradient-to-br from-blue-50/90 via-sky-50/60 to-blue-100/50 p-6 border border-blue-100/80 shadow-2xs overflow-hidden flex flex-col justify-center">
           <div className="relative z-10 flex items-start gap-3">
             <div className="text-blue-600 flex-shrink-0 pt-0.5">
               <Quote className="w-6 h-6 text-blue-500 fill-blue-100 rotate-180" />
             </div>
             <div>
-              <blockquote className="text-slate-800 text-xs sm:text-sm md:text-base font-bold leading-relaxed tracking-tight">
+              <blockquote className="text-slate-800 text-sm md:text-base font-bold leading-relaxed tracking-tight">
                 "{footer.quote}"
               </blockquote>
-              <cite className="block text-blue-700 font-extrabold text-xs sm:text-sm mt-1 not-italic">
+              <cite className="block text-blue-700 font-extrabold text-sm mt-1 not-italic">
                 — {footer.quoteAuthor}
               </cite>
             </div>
@@ -48,7 +48,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
         </div>
 
         {/* Right: Stay Connected Card */}
-        <div className="lg:col-span-5 rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-4">
+        <div className="col-span-5 rounded-3xl bg-white p-5 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-4">
           <div className="space-y-1.5">
             <h4 className="text-xs sm:text-sm font-extrabold text-blue-950 tracking-wider uppercase leading-none">
               {footer.stayConnectedTitle}

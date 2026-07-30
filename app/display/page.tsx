@@ -21,19 +21,31 @@ export default function DisplayPage() {
   const [viewport, setViewport] = useState({ w: 0, h: 0, scale: 1 });
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Recompute scale whenever the window resizes so the canvas always fills the screen
+  // Recompute scale whenever the window/visualViewport resizes or changes orientation
   useEffect(() => {
     function computeScale() {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
+      const vw = window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth || CANVAS_W;
+      const vh = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || CANVAS_H;
       const scaleX = vw / CANVAS_W;
       const scaleY = vh / CANVAS_H;
       // Use the smaller scale so the full canvas always fits — no cropping
       setViewport({ w: vw, h: vh, scale: Math.min(scaleX, scaleY) });
     }
     computeScale();
+
     window.addEventListener("resize", computeScale);
-    return () => window.removeEventListener("resize", computeScale);
+    window.addEventListener("orientationchange", computeScale);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", computeScale);
+    }
+
+    return () => {
+      window.removeEventListener("resize", computeScale);
+      window.removeEventListener("orientationchange", computeScale);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", computeScale);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -130,8 +142,18 @@ export default function DisplayPage() {
 
   return (
     <>
-      {/* Prevent body-level scrollbars; only active on this page */}
-      <style>{`html, body { overflow: hidden !important; margin: 0; padding: 0; }`}</style>
+      {/* Prevent body-level scrollbars & iOS font boosting; only active on this page */}
+      <style>{`
+        html, body {
+          overflow: hidden !important;
+          margin: 0;
+          padding: 0;
+          width: 100%;
+          height: 100%;
+          -webkit-text-size-adjust: 100%;
+          touch-action: none;
+        }
+      `}</style>
       {/*
        * Outer shell: fills the entire viewport with a dark background.
        * The scaled canvas is positioned absolutely inside and centered via margin math.

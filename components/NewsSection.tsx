@@ -95,7 +95,7 @@ export const NewsSection: React.FC<NewsSectionProps> = ({
         </div>
       </div>
 
-      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 transition-all duration-300 transform ${isFading ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'}`}>
+      <div className={`grid grid-cols-4 gap-4 transition-all duration-300 transform ${isFading ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'}`}>
         {isSkeleton
           ? Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
               <div key={i} className="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-xs animate-pulse h-[300px] flex flex-col justify-between">
@@ -111,7 +111,7 @@ export const NewsSection: React.FC<NewsSectionProps> = ({
           : currentItems.map((item, idx) => (
               <div
                 key={`${item.id}-${idx}`}
-                className="bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between select-none transition-all duration-300 h-[305px] sm:h-[315px] hover:border-blue-300 hover:shadow-md"
+                className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between select-none transition-all duration-300 h-[315px] hover:border-blue-300 hover:shadow-md"
               >
                 <div className="flex flex-col flex-1 justify-start">
                   <div className="relative rounded-xl overflow-hidden mb-2.5 h-32 sm:h-34 bg-slate-100 flex-shrink-0">
