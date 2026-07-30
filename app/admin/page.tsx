@@ -2070,46 +2070,38 @@ export default function AdminPage() {
 
         {/* RIGHT COLUMN: Items List & Convex / External Fetcher Tools */}
         <div className="lg:col-span-7 space-y-6">
-          {/* SPECIAL TOOL BANNER FOR EXTERNAL LIVE NEWS IN NEWS & GENERAL NEWS TABS */}
+          {/* LIVE NEWS FETCHER TOOL — NEWS & GENERAL NEWS TABS */}
           {(activeTab === "generalNews" || activeTab === "news") && (
-            <div className="bg-gradient-to-br from-purple-950/90 via-slate-900 to-indigo-950/90 border border-purple-800/80 rounded-3xl p-5 shadow-xl space-y-4">
-              {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-purple-900/50 pb-3">
-                <div>
-                  <div className="flex items-center gap-2 text-purple-400 font-extrabold text-xs uppercase tracking-wider mb-1">
-                    <Globe className="w-4 h-4" />
-                    <span>Live External News API Engine</span>
-                    <span className="px-2 py-0.5 text-[9px] font-black rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                      NewsAPI.org (Active & Working)
-                    </span>
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-xl overflow-hidden">
+              {/* Tool Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/80">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-purple-600/20 border border-purple-700/40 flex items-center justify-center flex-shrink-0">
+                    <Globe className="w-4 h-4 text-purple-400" />
                   </div>
-                  <h3 className="text-lg font-black text-white">
-                    Fetch, Search & Auto-Import Live News
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Search global headlines via NewsAPI, preview articles, and publish directly with 1 click.
-                  </p>
+                  <div>
+                    <h3 className="text-sm font-black text-white leading-tight">Live News Fetcher</h3>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Search & publish global headlines directly</p>
+                  </div>
                 </div>
-
                 <button
                   type="button"
                   onClick={handleAutoAddTopNews}
                   disabled={fetchingNews || fetchedNews.length === 0}
-                  className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-extrabold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wider flex-shrink-0"
+                  className="px-3.5 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[11px] font-bold rounded-xl shadow transition-all flex items-center gap-1.5 flex-shrink-0"
                 >
-                  <Sparkles className="w-4 h-4 text-amber-300" />
-                  <span>⚡ Auto-Import Top News</span>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Auto-Import Top
                 </button>
               </div>
 
-              {/* Search Controls & Topic Chips */}
-              <div className="space-y-3">
+              {/* Search Bar */}
+              <div className="px-5 pt-4 pb-3 space-y-3">
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <input
                       type="text"
-                      placeholder="Search news topic e.g. technology, AI, college, space..."
+                      placeholder="Search topic — e.g. AI, space, education, robotics..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => {
@@ -2118,28 +2110,27 @@ export default function AdminPage() {
                           autoFetchExternalNews(searchQuery);
                         }
                       }}
-                      className="w-full text-xs p-3 pl-9 bg-slate-950 border border-purple-900/60 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-slate-500"
+                      className="w-full text-xs p-2.5 pl-8 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-slate-500 transition-all"
                     />
-                    <Search className="w-4 h-4 text-purple-400 absolute left-3 top-3.5" />
+                    <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-3" />
                   </div>
                   <button
                     type="button"
                     onClick={() => autoFetchExternalNews(searchQuery)}
                     disabled={fetchingNews}
-                    className="px-4 py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
+                    className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white text-[11px] font-bold rounded-xl border border-slate-700 transition-all flex items-center gap-1.5 flex-shrink-0"
                   >
                     {fetchingNews ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      <Search className="w-4 h-4" />
+                      <Search className="w-3.5 h-3.5" />
                     )}
-                    <span>Search News</span>
+                    Search
                   </button>
                 </div>
 
-                {/* Quick Topic Chips */}
-                <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                  <span className="text-slate-400 font-semibold text-[11px] mr-1">Quick Topics:</span>
+                {/* Quick Topic Pills */}
+                <div className="flex flex-wrap items-center gap-1.5">
                   {["Technology", "AI & Tech", "Education", "Science", "Robotics", "Cybersecurity"].map((chip) => (
                     <button
                       key={chip}
@@ -2148,10 +2139,10 @@ export default function AdminPage() {
                         setSearchQuery(chip);
                         autoFetchExternalNews(chip);
                       }}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border ${
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
                         searchQuery.toLowerCase() === chip.toLowerCase()
                           ? "bg-purple-600 text-white border-purple-500"
-                          : "bg-slate-950/80 text-purple-300 border-purple-900/40 hover:border-purple-700 hover:bg-purple-950/40"
+                          : "bg-slate-950 text-slate-400 border-slate-800 hover:border-purple-700/60 hover:text-purple-300"
                       }`}
                     >
                       {chip}
@@ -2160,108 +2151,88 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Fetched News Results List */}
-              <div className="pt-2">
-                <div className="flex items-center justify-between text-xs mb-2">
-                  <span className="font-extrabold text-slate-300 uppercase tracking-wider">
-                    Fetched Live News ({fetchedNews.length} Results)
+              {/* Results Header */}
+              <div className="px-5 pb-2 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                  Results ({fetchedNews.length})
+                </span>
+                {fetchingNews && (
+                  <span className="text-[11px] text-purple-400 font-semibold flex items-center gap-1">
+                    <RefreshCw className="w-3 h-3 animate-spin" /> Fetching...
                   </span>
-                  {fetchingNews && (
-                    <span className="text-purple-400 font-semibold flex items-center gap-1">
-                      <RefreshCw className="w-3 h-3 animate-spin" /> Fetching latest headlines...
-                    </span>
-                  )}
-                </div>
+                )}
+              </div>
 
+              {/* News Cards */}
+              <div className="px-5 pb-5">
                 {fetchedNews.length === 0 ? (
-                  <div className="p-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-center text-xs text-slate-400">
-                    No articles fetched. Click search or select a topic above.
+                  <div className="py-8 border border-dashed border-slate-800 rounded-2xl text-center">
+                    <Globe className="w-6 h-6 text-slate-700 mx-auto mb-2" />
+                    <p className="text-xs text-slate-500">No articles yet. Search a topic or pick a quick filter above.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                  <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-0.5 scrollbar-thin">
                     {fetchedNews.map((article: any, idx: number) => {
                       const isGenNewsAdded = generalNewsList.some(
-                        (item) => item.title.trim().toLowerCase() === article.title.trim().toLowerCase()
-                      );
-                      const isCampusNewsAdded = newsList.some(
                         (item) => item.title.trim().toLowerCase() === article.title.trim().toLowerCase()
                       );
 
                       return (
                         <div
                           key={article.id || `fetched-${idx}`}
-                          className="p-3 bg-slate-950/90 border border-purple-900/30 rounded-2xl flex flex-col sm:flex-row items-start gap-3 hover:border-purple-700/60 transition-colors"
+                          className="flex items-start gap-3 p-3 bg-slate-950 border border-slate-800 rounded-2xl hover:border-purple-800/50 transition-colors group"
                         >
-                          <div className="relative w-full sm:w-24 h-20 rounded-xl overflow-hidden bg-slate-900 flex-shrink-0">
+                          {/* Thumbnail */}
+                          <div className="relative w-20 h-16 rounded-xl overflow-hidden bg-slate-900 flex-shrink-0">
                             <NextImage
                               src={article.image}
                               alt={article.title}
                               fill
-                              sizes="96px"
+                              sizes="80px"
                               className="object-cover"
                             />
-                            <span className="absolute top-1 left-1 px-1.5 py-0.5 text-[8px] font-black rounded bg-black/80 text-purple-300 border border-purple-800 uppercase truncate max-w-[80px]">
-                              {article.source || "News"}
-                            </span>
                           </div>
 
+                          {/* Content */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="px-2 py-0.5 text-[9px] font-black rounded bg-purple-950 text-purple-400 border border-purple-800 uppercase">
+                              <span className="px-1.5 py-0.5 text-[9px] font-black rounded bg-purple-950/80 text-purple-400 border border-purple-900 uppercase tracking-wide">
                                 {article.tag || "NEWS"}
                               </span>
-                              <span className="text-[10px] text-slate-400">{article.date}</span>
+                              <span className="text-[10px] text-slate-500">{article.source}</span>
+                              <span className="text-[10px] text-slate-600">·</span>
+                              <span className="text-[10px] text-slate-500">{article.date}</span>
                             </div>
-                            <h4 className="font-extrabold text-white text-xs line-clamp-1">{article.title}</h4>
-                            <p className="text-slate-400 text-[11px] line-clamp-2 mt-0.5">{article.description}</p>
+                            <h4 className="font-bold text-white text-[12px] leading-snug line-clamp-2 mb-1.5">
+                              {article.title}
+                            </h4>
+                            <p className="text-slate-500 text-[11px] line-clamp-1">{article.description}</p>
+                          </div>
 
-                            <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleAddFetchedItemToGenNews(article)}
-                                disabled={isGenNewsAdded}
-                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
-                                  isGenNewsAdded
-                                    ? "bg-slate-800 text-slate-400 cursor-not-allowed"
-                                    : "bg-purple-600 hover:bg-purple-500 text-white shadow"
-                                }`}
-                              >
-                                {isGenNewsAdded ? (
-                                  <>
-                                    <Check className="w-3 h-3 text-emerald-400" />
-                                    <span>In General News</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Plus className="w-3 h-3" />
-                                    <span>Add Directly to General News</span>
-                                  </>
-                                )}
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => handleAddFetchedItemToCampusNews(article)}
-                                disabled={isCampusNewsAdded}
-                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
-                                  isCampusNewsAdded
-                                    ? "bg-slate-800 text-slate-400 cursor-not-allowed"
-                                    : "bg-blue-900/60 hover:bg-blue-800/80 text-blue-300 border border-blue-700/60"
-                                }`}
-                              >
-                                {isCampusNewsAdded ? (
-                                  <>
-                                    <Check className="w-3 h-3 text-emerald-400" />
-                                    <span>In Campus News</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Plus className="w-3 h-3" />
-                                    <span>Add to Campus News</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
+                          {/* Action */}
+                          <div className="flex-shrink-0 self-center">
+                            <button
+                              type="button"
+                              onClick={() => handleAddFetchedItemToGenNews(article)}
+                              disabled={isGenNewsAdded}
+                              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                                isGenNewsAdded
+                                  ? "bg-slate-800/80 text-slate-500 cursor-not-allowed border border-slate-700"
+                                  : "bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-900/40"
+                              }`}
+                            >
+                              {isGenNewsAdded ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-400" />
+                                  Published
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="w-3 h-3" />
+                                  Publish
+                                </>
+                              )}
+                            </button>
                           </div>
                         </div>
                       );
