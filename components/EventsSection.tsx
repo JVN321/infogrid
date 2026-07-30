@@ -215,6 +215,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                     alt="Scan QR for Event"
                     width={64}
                     height={64}
+                    unoptimized
                     className="w-full h-full object-contain"
                   />
                 </div>
@@ -321,6 +322,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
                           alt="QR Code"
                           width={28}
                           height={28}
+                          unoptimized
                           className="w-full h-full object-contain"
                         />
                       </div>
