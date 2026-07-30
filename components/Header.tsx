@@ -57,73 +57,69 @@ export const Header: React.FC<HeaderProps> = ({ data, isSkeleton }) => {
 
   if (isSkeleton) {
     return (
-      <header className="bg-white border-b border-slate-100 py-3 px-4 shadow-2xs animate-pulse flex-shrink-0">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="w-16 h-16 bg-slate-200 rounded-xl"></div>
-          <div className="flex items-center gap-3">
-            <div className="w-16 h-16 bg-slate-200 rounded-xl"></div>
-            <div className="space-y-2">
-              <div className="h-4 w-44 bg-slate-200 rounded"></div>
-              <div className="h-3 w-32 bg-slate-200 rounded"></div>
-            </div>
+      <header className="bg-white border-b border-slate-100 px-6 py-3 shadow-xs flex-shrink-0 animate-pulse h-20 flex items-center">
+        <div className="w-full mx-auto flex items-center justify-between gap-6">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 bg-slate-200 rounded-lg"></div>
+            <div className="h-8 w-[1px] bg-slate-200"></div>
+            <div className="w-14 h-12 bg-slate-200 rounded-lg"></div>
           </div>
-          <div className="w-28 h-9 bg-slate-200 rounded-lg"></div>
+          <div className="flex-1 space-y-2">
+            <div className="h-5 w-72 bg-slate-200 rounded"></div>
+            <div className="h-3 w-40 bg-slate-200 rounded"></div>
+          </div>
+          <div className="w-36 h-10 bg-slate-200 rounded-xl"></div>
         </div>
       </header>
     );
   }
 
   return (
-    <header className="bg-white border-b border-slate-200/80 py-2.5 px-4 sm:px-6 shadow-2xs flex-shrink-0 z-20">
-      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Left: Department Logo */}
-        <div className="flex items-center justify-center sm:justify-start w-full sm:w-auto">
-          <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
+    <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 py-3 shadow-xs flex-shrink-0 z-20 h-20 flex items-center">
+      <div className="w-full mx-auto flex items-center justify-between gap-6">
+        {/* Left: Combined Brand Logos */}
+        <div className="flex items-center gap-3.5 flex-shrink-0">
+          <div className="relative w-12 h-12 flex-shrink-0 flex items-center justify-center">
             <Image
               src="/Departmentlogo.png"
               alt="Department Logo"
               fill
+              sizes="48px"
               priority
               className="object-contain"
             />
           </div>
-        </div>
-
-        {/* Center: College Logo & Name */}
-        <div className="flex flex-1 items-center justify-center gap-3 text-center sm:text-left w-full sm:w-auto">
-          <div className="relative w-16 h-18 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center">
+          <div className="h-8 w-[1px] bg-slate-200/80 flex-shrink-0" />
+          <div className="relative w-14 h-12 flex-shrink-0 flex items-center justify-center">
             <Image
               src="/MuthootLogo.png"
               alt="Muthoot Logo"
               fill
+              sizes="56px"
               priority
               className="object-contain"
             />
           </div>
-
-          <div className="flex flex-col">
-            <h1 className="text-lg sm:text-xl md:text-2xl font-black text-blue-950 tracking-tight leading-none uppercase">
-              {data.collegeName}
-            </h1>
-            <h2 className="text-xs sm:text-sm font-semibold text-slate-700 tracking-wider leading-tight">
-              {data.collegeSub}
-            </h2>
-            <span className="text-[11px] italic text-blue-600 font-semibold mt-0.5 hidden xs:inline">
-              {data.motto}
-            </span>
-          </div>
         </div>
 
-        {/* Right: Date & Live Time Box */}
-        <div className="flex items-center justify-center sm:justify-end w-full sm:w-auto">
-          <div className="bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs flex items-center gap-3 text-right">
-            <div className="flex items-center gap-1.5 text-blue-950 font-extrabold text-sm sm:text-base leading-tight tabular-nums">
-              <Clock className="w-4 h-4 text-blue-600 animate-pulse" />
+        {/* Center: College Name (Centered, uniform size, no motto) */}
+        <div className="flex flex-col justify-center items-center flex-1 min-w-0 text-center px-2">
+          <h1 className="text-base sm:text-lg md:text-xl font-black text-blue-950 tracking-tight uppercase truncate text-center">
+            {data.collegeSub ? `${data.collegeName} ${data.collegeSub}` : data.collegeName}
+          </h1>
+        </div>
+
+        {/* Right: Sleek Date & Live Time Widget */}
+        <div className="flex items-center flex-shrink-0">
+          <div className="bg-slate-50/80 px-3.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs flex items-center gap-3">
+            <div className="flex items-center gap-2 text-blue-950 font-extrabold text-sm sm:text-base leading-none tabular-nums whitespace-nowrap">
+              <Clock className="w-4 h-4 text-blue-600 animate-pulse flex-shrink-0" />
               <span>{timeInfo.liveTime}</span>
             </div>
-            <div className="flex flex-col text-[10px] text-slate-600 font-semibold border-l border-slate-200 pl-2.5">
+            <div className="h-6 w-[1px] bg-slate-200 flex-shrink-0" />
+            <div className="flex flex-col text-[10px] text-slate-600 font-bold leading-tight uppercase tracking-wider whitespace-nowrap">
               <span>{timeInfo.liveDay}</span>
-              <span>{timeInfo.liveDate}</span>
+              <span className="text-slate-500 font-medium">{timeInfo.liveDate}</span>
             </div>
           </div>
         </div>

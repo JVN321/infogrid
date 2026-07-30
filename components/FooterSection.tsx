@@ -97,7 +97,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
           {/* QR Code Container */}
           <div className="flex flex-col items-center flex-shrink-0">
             <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-xl flex items-center justify-center overflow-hidden">
-              <Image src="/qr-code.png" alt="QR Code" fill className="object-contain scale-105" />
+              <Image src="/qr-code.png" alt="QR Code" fill sizes="80px" className="object-contain scale-105" />
             </div>
           </div>
         </div>

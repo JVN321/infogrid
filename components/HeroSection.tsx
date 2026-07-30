@@ -99,6 +99,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               alt={slide.titleHighlight}
               fill
               priority={currentSlide === 0}
+              loading="eager"
               sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover object-center transform group-hover:scale-105 transition-transform duration-700"
             />

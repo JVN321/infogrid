@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { defaultSkeletonData, PortalData } from "@/data/skeletonData";
 import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/HeroSection";
@@ -9,10 +9,32 @@ import { EventsSection } from "@/components/EventsSection";
 import { AchievementsSection } from "@/components/AchievementsSection";
 import { FooterSection } from "@/components/FooterSection";
 
+// Fixed canvas dimensions — 9:16 portrait (e.g. 1080p display in portrait, or a standard TV/monitor)
+// Change these two constants to target a different base resolution; everything else scales automatically.
+const CANVAS_W = 1080;
+const CANVAS_H = 1920;
+
 export default function DisplayPage() {
   const [data, setData] = useState<PortalData>(defaultSkeletonData);
   const [isSkeleton, setIsSkeleton] = useState(false);
   const [maxFinishedEvents, setMaxFinishedEvents] = useState<number>(2);
+  const [viewport, setViewport] = useState({ w: 0, h: 0, scale: 1 });
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Recompute scale whenever the window resizes so the canvas always fills the screen
+  useEffect(() => {
+    function computeScale() {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const scaleX = vw / CANVAS_W;
+      const scaleY = vh / CANVAS_H;
+      // Use the smaller scale so the full canvas always fits — no cropping
+      setViewport({ w: vw, h: vh, scale: Math.min(scaleX, scaleY) });
+    }
+    computeScale();
+    window.addEventListener("resize", computeScale);
+    return () => window.removeEventListener("resize", computeScale);
+  }, []);
 
   useEffect(() => {
     // 1. Check LocalStorage settings & sync
@@ -23,7 +45,7 @@ export default function DisplayPage() {
         if (typeof parsedSettings.maxFinishedEvents === "number") {
           setMaxFinishedEvents(parsedSettings.maxFinishedEvents);
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const local = localStorage.getItem("infogrid_portal_data");
@@ -107,42 +129,78 @@ export default function DisplayPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-800 antialiased font-sans flex items-center justify-center p-0 sm:p-3 selection:bg-blue-600 selection:text-white">
-      {/* Main College Dashboard Canvas */}
-      <div className="bg-[#f5f7fa] w-full min-h-screen max-w-7xl rounded-none sm:rounded-3xl border-0 flex flex-col justify-between transition-all duration-300 shadow-2xl overflow-hidden">
-        {/* College Portal Header */}
-        <Header data={data.header} isSkeleton={isSkeleton} />
+    <>
+      {/* Prevent body-level scrollbars; only active on this page */}
+      <style>{`html, body { overflow: hidden !important; margin: 0; padding: 0; }`}</style>
+      {/*
+       * Outer shell: fills the entire viewport with a dark background.
+       * The scaled canvas is positioned absolutely inside and centered via margin math.
+       */}
+      <div
+        style={{ width: "100vw", height: "100vh", overflow: "hidden", background: "#0f172a", display: "flex", alignItems: "center", justifyContent: "center" }}
+      >
+        {/*
+       * Scaled canvas wrapper.
+       * Width/height are fixed at CANVAS_W×CANVAS_H — these are the "design pixels".
+       * transform-origin is top-left so the scale anchors correctly; the outer
+       * flex centering handles visual placement.
+       *
+       * transform: scale() is a CSS-level zoom — every pixel, font, border, and
+       * shadow inside is scaled uniformly. The layout is always identical to the
+       * 1080p reference; only the physical screen size changes.
+       */}
+        <div
+          ref={wrapperRef}
+          style={{
+            width: CANVAS_W,
+            height: CANVAS_H,
+            transformOrigin: "top left",
+            transform: `scale(${viewport.scale})`,
+            /* Shift the canvas so it stays centered after scaling from top-left */
+            marginLeft: (viewport.w - CANVAS_W * viewport.scale) / 2,
+            marginTop: (viewport.h - CANVAS_H * viewport.scale) / 2,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            overflow: "hidden",
+          }}
+          className="bg-[#f5f7fa] flex flex-col shadow-2xl"
+        >
+          {/* College Portal Header */}
+          <Header data={data.header} isSkeleton={isSkeleton} />
 
-        {/* Main Content Area */}
-        <main className="flex-1 flex flex-col justify-between px-4 sm:px-6 lg:px-8 py-4 space-y-4 overflow-y-auto lg:overflow-y-visible">
-          {/* Welcome / Hero Banner Slider */}
-          <HeroSection slides={data.heroSlides} isSkeleton={isSkeleton} />
+          {/* Main Content Area — no overflow scroll; everything fits the fixed canvas */}
+          <main className="flex-1 flex flex-col justify-between px-6 py-4 space-y-4 overflow-hidden">
+            {/* Welcome / Hero Banner Slider */}
+            <HeroSection slides={data.heroSlides} isSkeleton={isSkeleton} />
 
-          {/* Campus & General News Section */}
-          <NewsSection
-            news={data.news}
-            generalNews={data.generalNews}
-            isSkeleton={isSkeleton}
-          />
+            {/* Campus & General News Section */}
+            <NewsSection
+              news={data.news}
+              generalNews={data.generalNews}
+              isSkeleton={isSkeleton}
+            />
 
-          {/* Campus Events Section */}
-          <EventsSection
-            featured={data.featuredEvent}
-            upcoming={data.upcomingEvents}
-            maxFinishedEvents={maxFinishedEvents}
-            isSkeleton={isSkeleton}
-          />
+            {/* Campus Events Section */}
+            <EventsSection
+              featured={data.featuredEvent}
+              upcoming={data.upcomingEvents}
+              maxFinishedEvents={maxFinishedEvents}
+              isSkeleton={isSkeleton}
+            />
 
-          {/* Achievements Showcase Section */}
-          <AchievementsSection
-            achievements={data.achievements}
-            isSkeleton={isSkeleton}
-          />
+            {/* Achievements Showcase Section */}
+            <AchievementsSection
+              achievements={data.achievements}
+              isSkeleton={isSkeleton}
+            />
 
-          {/* Footer Quote & Social Connect Section */}
-          <FooterSection footer={data.footer} isSkeleton={isSkeleton} />
-        </main>
+            {/* Footer Quote & Social Connect Section */}
+            <FooterSection footer={data.footer} isSkeleton={isSkeleton} />
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
+
