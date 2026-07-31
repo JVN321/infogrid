@@ -40,6 +40,12 @@ export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+    const all = searchParams.get('all');
+
+    if (all === "true") {
+      await prisma.heroSlide.deleteMany({});
+      return NextResponse.json({ success: true, count: "all" });
+    }
     
     if (!id) {
       return NextResponse.json({ error: "Missing ID" }, { status: 400 });

@@ -1195,6 +1195,104 @@ export default function AdminPage() {
     resetHeroForm();
   };
 
+  const handleDeleteAllNews = async () => {
+    if (!confirm("Are you sure you want to DELETE ALL published Campus News items? This action cannot be undone.")) return;
+    setNewsList([]);
+    if (isDbConnected) {
+      try {
+        await fetch("/api/news?all=true", { method: "DELETE" });
+      } catch (e) {
+        console.error("Prisma bulk delete error:", e);
+      }
+    }
+    syncToLocalStorage([], generalNewsList, achievementsList, eventsList);
+    showNotify("All Campus News items have been deleted.", "info");
+  };
+
+  const handleDeleteAllGenNews = async () => {
+    if (!confirm("Are you sure you want to DELETE ALL published General News items? This action cannot be undone.")) return;
+    setGeneralNewsList([]);
+    if (isDbConnected) {
+      try {
+        await fetch("/api/general-news?all=true", { method: "DELETE" });
+      } catch (e) {
+        console.error("Prisma bulk delete error:", e);
+      }
+    }
+    syncToLocalStorage(newsList, [], achievementsList, eventsList);
+    showNotify("All General News items have been deleted.", "info");
+  };
+
+  const handleDeleteAllEvents = async () => {
+    if (!confirm("Are you sure you want to DELETE ALL published Events? This action cannot be undone.")) return;
+    setEventsList([]);
+    if (isDbConnected) {
+      try {
+        await fetch("/api/events?all=true", { method: "DELETE" });
+      } catch (e) {
+        console.error("Prisma bulk delete error:", e);
+      }
+    }
+    syncToLocalStorage(newsList, generalNewsList, achievementsList, []);
+    showNotify("All Event items have been deleted.", "info");
+  };
+
+  const handleDeleteAllAchievements = async () => {
+    if (!confirm("Are you sure you want to DELETE ALL published Achievements? This action cannot be undone.")) return;
+    setAchievementsList([]);
+    if (isDbConnected) {
+      try {
+        await fetch("/api/achievements?all=true", { method: "DELETE" });
+      } catch (e) {
+        console.error("Prisma bulk delete error:", e);
+      }
+    }
+    syncToLocalStorage(newsList, generalNewsList, [], eventsList);
+    showNotify("All Achievement items have been deleted.", "info");
+  };
+
+  const handleDeleteAllHeroSlides = async () => {
+    if (!confirm("Are you sure you want to DELETE ALL published Hero Slides? This action cannot be undone.")) return;
+    setHeroSlidesList([]);
+    if (isDbConnected) {
+      try {
+        await fetch("/api/hero-slides?all=true", { method: "DELETE" });
+      } catch (e) {
+        console.error("Prisma bulk delete error:", e);
+      }
+    }
+    resetHeroForm();
+    showNotify("All Hero Slides have been deleted.", "info");
+  };
+
+  const handleDeleteAllPublishedContent = async () => {
+    if (!confirm("CRITICAL WARNING: Are you sure you want to DELETE ALL published values (Campus News, General News, Events, Achievements, and Hero Slides)?\n\nThis will clear all content from the database and local storage. This action cannot be undone.")) return;
+    
+    setNewsList([]);
+    setGeneralNewsList([]);
+    setEventsList([]);
+    setAchievementsList([]);
+    setHeroSlidesList([]);
+
+    if (isDbConnected) {
+      try {
+        await Promise.all([
+          fetch("/api/news?all=true", { method: "DELETE" }),
+          fetch("/api/general-news?all=true", { method: "DELETE" }),
+          fetch("/api/events?all=true", { method: "DELETE" }),
+          fetch("/api/achievements?all=true", { method: "DELETE" }),
+          fetch("/api/hero-slides?all=true", { method: "DELETE" }),
+        ]);
+      } catch (e) {
+        console.error("Prisma bulk delete all error:", e);
+      }
+    }
+    
+    syncToLocalStorage([], [], [], []);
+    resetHeroForm();
+    showNotify("All published content across all sections has been deleted!", "error");
+  };
+
   const handleResetAllDefaults = () => {
     if (confirm("Reset all news, events, and achievements to default initial dataset?")) {
       setNewsList(defaultSkeletonData.news);
@@ -1329,6 +1427,14 @@ export default function AdminPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleDeleteAllPublishedContent}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-rose-200 hover:text-white bg-rose-950/80 hover:bg-rose-900 border border-rose-700 rounded-xl transition-all shadow-md shadow-rose-950/50"
+            title="Delete all published news, events, achievements & slides"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            <span>Delete All Published Content</span>
+          </button>
           <button
             onClick={handleResetAllDefaults}
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-slate-900 border border-slate-700 hover:border-slate-600 rounded-xl transition-all"
@@ -2079,8 +2185,15 @@ export default function AdminPage() {
                     <Layers className="w-3.5 h-3.5" />
                     Active Slides ({heroSlidesList.length})
                   </h4>
-                  {heroSlidesList.length > 1 && (
-                    <span className="text-[10px] text-slate-600 italic">Sorted by display order</span>
+                  {heroSlidesList.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleDeleteAllHeroSlides}
+                      className="flex items-center gap-1 px-2.5 py-1 bg-rose-950/50 hover:bg-rose-900 text-rose-300 text-[10px] font-bold rounded-lg border border-rose-800/60 transition-all"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Delete All Slides</span>
+                    </button>
                   )}
                 </div>
 
@@ -2445,6 +2558,50 @@ export default function AdminPage() {
                   ? `Campus Events in Display (${eventsList.length})`
                   : `Published Achievements (${achievementsList.length})`}
               </h3>
+
+              {activeTab === "news" && newsList.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleDeleteAllNews}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs font-bold rounded-xl border border-rose-800/80 transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete All News</span>
+                </button>
+              )}
+
+              {activeTab === "generalNews" && generalNewsList.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleDeleteAllGenNews}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs font-bold rounded-xl border border-rose-800/80 transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete All General News</span>
+                </button>
+              )}
+
+              {activeTab === "events" && eventsList.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleDeleteAllEvents}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs font-bold rounded-xl border border-rose-800/80 transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete All Events</span>
+                </button>
+              )}
+
+              {activeTab === "achievements" && achievementsList.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleDeleteAllAchievements}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs font-bold rounded-xl border border-rose-800/80 transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete All Achievements</span>
+                </button>
+              )}
             </div>
 
             {/* CAMPUS NEWS LIST */}

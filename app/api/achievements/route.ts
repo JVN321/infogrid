@@ -79,6 +79,12 @@ export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
+    const all = searchParams.get("all");
+
+    if (all === "true") {
+      await prisma.achievementItem.deleteMany({});
+      return NextResponse.json({ success: true, count: "all" });
+    }
 
     if (!id) {
       return NextResponse.json({ error: "Item ID is required" }, { status: 400 });
