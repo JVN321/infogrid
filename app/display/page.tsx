@@ -90,21 +90,19 @@ export default function DisplayPage() {
           const achData = await achRes.json();
           const slidesData = await slidesRes.json();
 
-          if (Array.isArray(newsData) && newsData.length > 0) {
+          if (Array.isArray(newsData)) {
             setData((prev) => ({ ...prev, news: newsData }));
           }
-          if (Array.isArray(genNewsData) && genNewsData.length > 0) {
+          if (Array.isArray(genNewsData)) {
             setData((prev) => ({ ...prev, generalNews: genNewsData }));
           }
-          if (Array.isArray(achData) && achData.length > 0) {
+          if (Array.isArray(achData)) {
             setData((prev) => ({ ...prev, achievements: achData }));
           }
-          if (Array.isArray(slidesData) && slidesData.length > 0) {
-            setData((prev) => ({ ...prev, heroSlides: slidesData }));
-          } else {
+          if (Array.isArray(slidesData)) {
             setData((prev) => ({
               ...prev,
-              heroSlides: [
+              heroSlides: slidesData.length > 0 ? slidesData : [
                 {
                   id: "default-1",
                   welcomeText: "Welcome to",
@@ -120,7 +118,7 @@ export default function DisplayPage() {
 
         if (eventsRes.ok) {
           const eventsData = await eventsRes.json();
-          if (Array.isArray(eventsData) && eventsData.length > 0) {
+          if (Array.isArray(eventsData)) {
             setData((prev) => ({ ...prev, upcomingEvents: eventsData }));
           }
         }

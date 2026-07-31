@@ -121,8 +121,20 @@
     }, 4500);
   })();
 
-  /* Auto Refresh */
-  setTimeout(function () {
-    window.location.reload();
-  }, 120000);
+  /* Smart Soft Refresh Check: Poll every 15 seconds for content changes */
+  setInterval(function () {
+    try {
+      var currentVer = document.body ? document.body.getAttribute("data-version") : null;
+      fetch("/display-signage?check=1&t=" + new Date().getTime(), { cache: "no-store" })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data && data.version && currentVer && data.version !== currentVer) {
+            window.location.href = "/display-signage?t=" + new Date().getTime();
+          }
+        })
+        .catch(function () {
+          /* Ignore network errors gracefully on webOS kiosk */
+        });
+    } catch (e) {}
+  }, 15000);
 })();

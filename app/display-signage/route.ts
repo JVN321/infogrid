@@ -1,7 +1,24 @@
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { defaultSkeletonData, PortalData, NewsItem, GeneralNewsItem, UpcomingEvent, AchievementItem } from "@/data/skeletonData";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+function computeDataVersion(news: any[], generalNews: any[], events: any[], achievements: any[], slides: any[]) {
+  const getItemHash = (items: any[]) =>
+    items
+      .map((i) => `${i.id || ''}:${i.title || i.titleHighlight || ''}:${i.updatedAt ? new Date(i.updatedAt).getTime() : i.createdAt ? new Date(i.createdAt).getTime() : ''}`)
+      .join("|");
+
+  return [
+    news.length, getItemHash(news),
+    generalNews.length, getItemHash(generalNews),
+    events.length, getItemHash(events),
+    achievements.length, getItemHash(achievements),
+    slides.length, getItemHash(slides),
+  ].join("___");
+}
 
 function getISTDateTime() {
   const now = new Date();
@@ -69,7 +86,7 @@ function escapeHtml(str: string) {
     .replace(/'/g, "&#039;");
 }
 
-function renderSignageHtml(data: PortalData): string {
+function renderSignageHtml(data: PortalData, dataVersion: string = "default"): string {
   const { liveTime, liveDay, liveDate } = getISTDateTime();
 
   const slides = data.heroSlides.length > 0 ? data.heroSlides : [
@@ -89,9 +106,7 @@ function renderSignageHtml(data: PortalData): string {
   
   const campusPagesCount = Math.max(1, Math.ceil(campusNews.length / ITEMS_PER_PAGE));
   const globalPagesCount = Math.ceil(globalNews.length / ITEMS_PER_PAGE);
-
   const newsPages: { type: "campus" | "global"; items: (NewsItem | GeneralNewsItem)[]; label: string }[] = [];
-
   for (let i = 0; i < campusPagesCount; i++) {
     const slice = campusNews.slice(i * ITEMS_PER_PAGE, (i + 1) * ITEMS_PER_PAGE);
     newsPages.push({ type: "campus", items: slice, label: "CAMPUS NEWS" });
@@ -101,35 +116,29 @@ function renderSignageHtml(data: PortalData): string {
     newsPages.push({ type: "global", items: slice, label: "GLOBAL NEWS" });
   }
 
-  // Events processing
-  const maxFinishedEvents = 2;
-  const upcoming = data.upcomingEvents || [];
-  const openEvents = upcoming.filter((evt) => {
+  // Events processing - ONLY active & open events (excluding finished/past events)
+  const openEvents = (data.upcomingEvents || []).filter((evt) => {
     const cat = (evt.category || "").toLowerCase();
     return !(cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended"));
   });
-  const finishedEvents = upcoming.filter((evt) => {
-    const cat = (evt.category || "").toLowerCase();
-    return cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended");
-  });
-  const filteredUpcoming = [...openEvents, ...finishedEvents.slice(0, maxFinishedEvents)];
 
   const EVT_PER_PAGE = 3;
-  const evtPagesCount = Math.max(1, Math.ceil(filteredUpcoming.length / EVT_PER_PAGE));
+  const evtPagesCount = Math.max(1, Math.ceil(openEvents.length / EVT_PER_PAGE));
   const eventPages: { items: UpcomingEvent[]; featured: any }[] = [];
 
   for (let i = 0; i < evtPagesCount; i++) {
-    const slice = filteredUpcoming.slice(i * EVT_PER_PAGE, (i + 1) * EVT_PER_PAGE);
-    const primaryEvent = filteredUpcoming[i * EVT_PER_PAGE] || filteredUpcoming[0];
+    const slice = openEvents.slice(i * EVT_PER_PAGE, (i + 1) * EVT_PER_PAGE);
+    const primaryEvent = openEvents[i * EVT_PER_PAGE] || openEvents[0];
     const feat = primaryEvent ? {
       title: primaryEvent.title,
       tagline: primaryEvent.tagline || primaryEvent.description || "Registration Open",
       badge: primaryEvent.badge || primaryEvent.category || "Featured Event",
       dateRange: primaryEvent.dateRange || primaryEvent.date || "",
       venue: primaryEvent.venue || "Campus",
+      ctaText: primaryEvent.ctaText || "Register Now",
       image: primaryEvent.image || data.featuredEvent.image,
       ctaLink: getGridEventUrl(primaryEvent),
-    } : { ...data.featuredEvent, ctaLink: getGridEventUrl(data.featuredEvent) };
+    } : defaultSkeletonData.featuredEvent;
 
     eventPages.push({ items: slice, featured: feat });
   }
@@ -169,7 +178,7 @@ function renderSignageHtml(data: PortalData): string {
     .sig-dot-inactive { width: 0.625rem; height: 0.625rem; background-color: #bfdbfe; }
   </style>
 </head>
-<body>
+<body data-version="${escapeHtml(dataVersion)}">
   <div style="width: 100vw; height: 100vh; overflow: hidden; background: #0f172a; display: flex; align-items: center; justify-content: center;">
     <!-- Canvas Wrapper - Fixed 1080x1920 portrait scaled to viewport -->
     <div
@@ -294,7 +303,7 @@ function renderSignageHtml(data: PortalData): string {
             <div class="flex items-center gap-2">
               <h3 class="text-base font-extrabold text-blue-950 tracking-tight uppercase">CAMPUS EVENTS</h3>
               <span class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                ${openEvents.length} Open (${filteredUpcoming.length} Shown)
+                ${openEvents.length} Active
               </span>
             </div>
           </div>
@@ -573,17 +582,29 @@ function renderSignageHtml(data: PortalData): string {
         }, 4500);
       })();
 
-      /* Auto Refresh every 2 minutes */
-      setTimeout(function () {
-        window.location.reload();
-      }, 120000);
+      /* Smart Soft Refresh Check: Poll every 15 seconds for content changes */
+      setInterval(function () {
+        try {
+          var currentVer = document.body ? document.body.getAttribute("data-version") : null;
+          fetch("/display-signage?check=1&t=" + new Date().getTime(), { cache: "no-store" })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+              if (data && data.version && currentVer && data.version !== currentVer) {
+                window.location.href = "/display-signage?t=" + new Date().getTime();
+              }
+            })
+            .catch(function () {
+              /* Ignore network errors gracefully on webOS kiosk */
+            });
+        } catch (e) {}
+      }, 15000);
     })();
   </script>
 </body>
 </html>`;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -596,47 +617,81 @@ export async function GET() {
       prisma.heroSlide.findMany({ orderBy: { orderIndex: "asc" } }),
     ]);
 
-    const processedEvents = events.map((evt) => {
+    const dataVersion = computeDataVersion(news, generalNews, events, achievements, slides);
+
+    // If kiosk is doing a lightweight background version check
+    if (req.nextUrl.searchParams.get("check") === "1") {
+      return Response.json(
+        { version: dataVersion },
+        {
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+          },
+        }
+      );
+    }
+
+    // Filter out past and finished events completely so ONLY active events are displayed
+    const activeEvents = events.filter((evt) => {
+      const cat = (evt.category || "").toLowerCase();
+      if (cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended")) {
+        return false;
+      }
       if (evt.date) {
         const evtDate = new Date(evt.date);
         if (!isNaN(evtDate.getTime()) && evtDate < today) {
-          return { ...evt, category: "Finished", ctaText: "View Event" };
+          return false;
         }
       }
-      return evt;
+      return true;
     });
 
     const portalData: PortalData = {
       header: defaultSkeletonData.header,
-      heroSlides: slides.length > 0 ? (slides as any) : defaultSkeletonData.heroSlides,
-      news: news.length > 0 ? (news as any) : defaultSkeletonData.news,
-      generalNews: generalNews.length > 0 ? (generalNews as any) : defaultSkeletonData.generalNews,
-      featuredEvent: defaultSkeletonData.featuredEvent,
-      upcomingEvents: processedEvents.length > 0 ? (processedEvents as any) : defaultSkeletonData.upcomingEvents,
-      achievements: achievements.length > 0 ? (achievements as any) : defaultSkeletonData.achievements,
+      heroSlides: slides as any,
+      news: news as any,
+      generalNews: generalNews as any,
+      featuredEvent: activeEvents.length > 0 ? {
+        title: activeEvents[0].title,
+        tagline: activeEvents[0].tagline || activeEvents[0].description || "",
+        badge: activeEvents[0].badge || activeEvents[0].category || "Featured Event",
+        dateRange: activeEvents[0].dateRange || activeEvents[0].date || "",
+        venue: activeEvents[0].venue || "Campus",
+        ctaText: activeEvents[0].ctaText || "Register Now",
+        image: activeEvents[0].image || "",
+        ctaLink: getGridEventUrl(activeEvents[0]),
+      } : defaultSkeletonData.featuredEvent,
+      upcomingEvents: activeEvents as any,
+      achievements: achievements as any,
       footer: defaultSkeletonData.footer,
     };
 
-    const htmlString = renderSignageHtml(portalData);
+    const htmlString = renderSignageHtml(portalData, dataVersion);
 
     return new Response(htmlString, {
       status: 200,
       headers: {
         "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
     });
   } catch (error: any) {
     console.error("Error generating signage HTML:", error);
 
     const portalData = defaultSkeletonData;
-    const htmlString = renderSignageHtml(portalData);
+    const htmlString = renderSignageHtml(portalData, "fallback");
 
     return new Response(htmlString, {
       status: 200,
       headers: {
         "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
     });
   }

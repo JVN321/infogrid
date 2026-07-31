@@ -284,9 +284,9 @@ export default function AdminPage() {
         const slidesData = await slidesRes.json();
 
         if (Array.isArray(newsData) && Array.isArray(genNewsData) && Array.isArray(achData)) {
-          setNewsList(newsData.length > 0 ? newsData : defaultSkeletonData.news);
-          setGeneralNewsList(genNewsData.length > 0 ? genNewsData : defaultSkeletonData.generalNews);
-          setAchievementsList(achData.length > 0 ? achData : defaultSkeletonData.achievements);
+          setNewsList(newsData);
+          setGeneralNewsList(genNewsData);
+          setAchievementsList(achData);
           if (Array.isArray(slidesData)) setHeroSlidesList(slidesData);
           dbWorking = true;
         }
@@ -294,13 +294,9 @@ export default function AdminPage() {
 
       if (eventsRes.ok) {
         const eventsData = await eventsRes.json();
-        if (Array.isArray(eventsData) && eventsData.length > 0) {
+        if (Array.isArray(eventsData)) {
           setEventsList(deduplicateEventsList(eventsData));
-        } else {
-          setEventsList(deduplicateEventsList(defaultSkeletonData.upcomingEvents));
         }
-      } else {
-        setEventsList(deduplicateEventsList(defaultSkeletonData.upcomingEvents));
       }
 
       // -------------------------------------------------------------
