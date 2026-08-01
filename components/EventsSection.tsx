@@ -56,8 +56,19 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
     ? [...openEvents, ...finishedEvents]
     : primaryFiltered;
 
-  // Pick active event for featured card based on currentPage so it cycles dynamically with pagination/slideshow
-  const featuredIndex = (currentPage * ITEMS_PER_PAGE) % (filteredUpcoming.length || 1);
+  const totalPages = filteredUpcoming.length || 1;
+
+  const changePage = (newPage: number) => {
+    if (newPage === currentPage) return;
+    setIsFading(true);
+    setTimeout(() => {
+      setCurrentPage(newPage);
+      setIsFading(false);
+    }, 200);
+  };
+
+  // Pick active event for featured card based on currentPage so EVERY event gets featured sequentially
+  const featuredIndex = currentPage % (filteredUpcoming.length || 1);
   const primaryEvent = filteredUpcoming[featuredIndex] || filteredUpcoming[0];
   const activeFeatured = primaryEvent
     ? {
@@ -74,17 +85,6 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
       ...featured,
       ctaLink: getGridEventUrl(featured),
     };
-
-  const totalPages = Math.ceil(filteredUpcoming.length / ITEMS_PER_PAGE) || 1;
-
-  const changePage = (newPage: number) => {
-    if (newPage === currentPage) return;
-    setIsFading(true);
-    setTimeout(() => {
-      setCurrentPage(newPage);
-      setIsFading(false);
-    }, 200);
-  };
 
   // Auto-slide looping effect
   useEffect(() => {
@@ -136,8 +136,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
     filteredUpcoming.length <= ITEMS_PER_PAGE
       ? filteredUpcoming
       : Array.from({ length: ITEMS_PER_PAGE }).map((_, j) => {
-        const startIndex = currentPage * ITEMS_PER_PAGE;
-        return filteredUpcoming[(startIndex + j) % filteredUpcoming.length];
+        return filteredUpcoming[(currentPage + j) % filteredUpcoming.length];
       });
 
   const handlePrevPage = () => {

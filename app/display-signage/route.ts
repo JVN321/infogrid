@@ -135,13 +135,11 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
   const isEvtFallback = openEvts.length === 0 && finishedEvts.length > 0;
   const displayEvents = isEvtFallback ? finishedEvts : openEvts;
 
-  const EVT_PER_PAGE = 3;
-  const evtPagesCount = Math.max(1, Math.ceil(displayEvents.length / EVT_PER_PAGE));
+  const evtPagesCount = displayEvents.length;
   const eventPages: { items: UpcomingEvent[]; featured: any }[] = [];
 
   for (let i = 0; i < evtPagesCount; i++) {
-    const slice = displayEvents.slice(i * EVT_PER_PAGE, (i + 1) * EVT_PER_PAGE);
-    const primaryEvent = displayEvents[i * EVT_PER_PAGE] || displayEvents[0];
+    const primaryEvent = displayEvents[i];
     const feat = primaryEvent ? {
       title: primaryEvent.title,
       tagline: primaryEvent.tagline || primaryEvent.description || (isEvtFallback ? "Recently Concluded" : "Registration Open"),
@@ -152,6 +150,12 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
       image: primaryEvent.image || data.featuredEvent.image,
       ctaLink: getGridEventUrl(primaryEvent),
     } : defaultSkeletonData.featuredEvent;
+
+    const sliceCount = Math.min(3, displayEvents.length);
+    const slice: UpcomingEvent[] = [];
+    for (let k = 0; k < sliceCount; k++) {
+      slice.push(displayEvents[(i + k) % displayEvents.length]);
+    }
 
     eventPages.push({ items: slice, featured: feat });
   }
@@ -261,58 +265,6 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
           </div>
         </section>
 
-        <!-- News Section -->
-        <section class="my-3 flex-shrink-0">
-          <div class="flex items-center justify-between gap-2 mb-3">
-            <h3 id="sig-news-label" class="text-lg font-extrabold tracking-tight uppercase text-blue-950">
-              ${escapeHtml(newsPages[0]?.label || "CAMPUS NEWS")}
-            </h3>
-          </div>
-
-          <div id="sig-news-container" class="relative h-[365px] overflow-hidden">
-            ${newsPages.length === 0 ? `
-              <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center h-[365px]">
-                <h4 class="font-extrabold text-blue-950 text-base mb-1">No News Available</h4>
-              </div>
-            ` : newsPages.map((page, pIdx) => `
-              <div
-                class="sig-news-page grid grid-cols-4 gap-4 transition-all duration-300 h-[365px]"
-                style="${pIdx === 0 ? "" : "display: none;"}"
-                data-label="${escapeHtml(page.label)}"
-              >
-                ${page.items.map((item) => `
-                  <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between h-[365px]">
-                    <div class="flex flex-col flex-1 justify-start min-h-0">
-                      <div class="relative rounded-xl overflow-hidden mb-2.5 h-[160px] w-full bg-slate-100 flex-shrink-0">
-                        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover object-center" />
-                      </div>
-                      <div class="mb-1.5 h-5 flex items-center justify-between flex-shrink-0">
-                        <span class="inline-block px-2 py-0.5 text-[10px] font-extrabold rounded-md border tracking-wider uppercase ${getTagColorClass(item.tagColor)}">
-                          ${escapeHtml(item.tag)}
-                        </span>
-                        ${(item as GeneralNewsItem).source ? `
-                          <span class="text-[9px] font-bold text-slate-400 truncate max-w-[50%]">
-                            ${escapeHtml((item as GeneralNewsItem).source || "")}
-                          </span>
-                        ` : ""}
-                      </div>
-                      <div class="h-12 mb-1 flex items-start overflow-hidden flex-shrink-0">
-                        <h4 class="font-extrabold text-blue-950 text-sm leading-snug line-clamp-2">${escapeHtml(item.title)}</h4>
-                      </div>
-                      <div class="h-12 overflow-hidden flex-shrink-0">
-                        <p class="text-slate-600 text-xs leading-relaxed line-clamp-2">${escapeHtml(item.description)}</p>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-1.5 pt-2 border-t border-slate-100 flex-shrink-0">
-                      <span class="text-slate-500 font-semibold text-xs">${escapeHtml(item.date)}</span>
-                    </div>
-                  </div>
-                `).join("")}
-              </div>
-            `).join("")}
-          </div>
-        </section>
-
         <!-- Events Section -->
         <section class="my-2 flex-shrink-0">
           <div class="flex items-center justify-between mb-2">
@@ -409,22 +361,74 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
             <h3 class="text-lg font-extrabold text-blue-950 tracking-tight uppercase">ACHIEVEMENTS</h3>
           </div>
 
-          <div id="sig-ach-container" class="relative h-[320px] overflow-hidden">
+          <div id="sig-ach-container" class="relative h-[440px] overflow-hidden">
             ${achPages.map((items, pIdx) => `
               <div
-                class="sig-ach-page grid grid-cols-2 gap-4 transition-all duration-300 h-[320px]"
+                class="sig-ach-page grid grid-cols-2 gap-4 transition-all duration-300 h-[440px]"
                 style="${pIdx === 0 ? "" : "display: none;"}"
               >
                 ${items.map((item) => `
-                  <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between h-[320px]">
-                    <div>
-                      <div class="relative rounded-xl overflow-hidden mb-2.5 aspect-16/10 bg-slate-100 h-[170px] w-full">
+                  <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between h-[440px]">
+                    <div class="flex flex-col flex-1 min-h-0">
+                      <div class="relative rounded-xl overflow-hidden mb-3 aspect-[16/9] bg-slate-100 h-[250px] w-full flex-shrink-0">
                         <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover object-center" />
                       </div>
-                      <h4 class="font-extrabold text-blue-950 text-base leading-snug mb-1 line-clamp-2 h-12 overflow-hidden">${escapeHtml(item.title)}</h4>
-                      <p class="text-slate-600 text-xs leading-relaxed line-clamp-2 mb-2 h-10 overflow-hidden">${escapeHtml(item.description)}</p>
+                      <h4 class="font-extrabold text-blue-950 text-base leading-snug mb-1 line-clamp-2 h-12 overflow-hidden flex-shrink-0">${escapeHtml(item.title)}</h4>
+                      <p class="text-slate-600 text-xs leading-relaxed line-clamp-2 mb-2 h-10 overflow-hidden flex-shrink-0">${escapeHtml(item.description)}</p>
                     </div>
-                    <div class="text-blue-600 text-xs font-bold pt-2 border-t border-slate-100 flex-shrink-0">${escapeHtml(item.date)}</div>
+                    <div class="text-blue-600 text-xs font-bold pt-3.5 pb-1 border-t border-slate-100 flex-shrink-0 flex items-center justify-between">${escapeHtml(item.date)}</div>
+                  </div>
+                `).join("")}
+              </div>
+            `).join("")}
+          </div>
+        </section>
+
+        <!-- News Section -->
+        <section class="my-3 flex-shrink-0">
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <h3 id="sig-news-label" class="text-lg font-extrabold tracking-tight uppercase text-blue-950">
+              ${escapeHtml(newsPages[0]?.label || "CAMPUS NEWS")}
+            </h3>
+          </div>
+
+          <div id="sig-news-container" class="relative h-[365px] overflow-hidden">
+            ${newsPages.length === 0 ? `
+              <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center h-[365px]">
+                <h4 class="font-extrabold text-blue-950 text-base mb-1">No News Available</h4>
+              </div>
+            ` : newsPages.map((page, pIdx) => `
+              <div
+                class="sig-news-page grid grid-cols-4 gap-4 transition-all duration-300 h-[365px]"
+                style="${pIdx === 0 ? "" : "display: none;"}"
+                data-label="${escapeHtml(page.label)}"
+              >
+                ${page.items.map((item) => `
+                  <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between h-[365px]">
+                    <div class="flex flex-col flex-1 justify-start min-h-0">
+                      <div class="relative rounded-xl overflow-hidden mb-2.5 h-[160px] w-full bg-slate-100 flex-shrink-0">
+                        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover object-center" />
+                      </div>
+                      <div class="mb-1.5 h-5 flex items-center justify-between flex-shrink-0">
+                        <span class="inline-block px-2 py-0.5 text-[10px] font-extrabold rounded-md border tracking-wider uppercase ${getTagColorClass(item.tagColor)}">
+                          ${escapeHtml(item.tag)}
+                        </span>
+                        ${(item as GeneralNewsItem).source ? `
+                          <span class="text-[9px] font-bold text-slate-400 truncate max-w-[50%]">
+                            ${escapeHtml((item as GeneralNewsItem).source || "")}
+                          </span>
+                        ` : ""}
+                      </div>
+                      <div class="h-12 mb-1 flex items-start overflow-hidden flex-shrink-0">
+                        <h4 class="font-extrabold text-blue-950 text-sm leading-snug line-clamp-2">${escapeHtml(item.title)}</h4>
+                      </div>
+                      <div class="h-12 overflow-hidden flex-shrink-0">
+                        <p class="text-slate-600 text-xs leading-relaxed line-clamp-2">${escapeHtml(item.description)}</p>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 pt-2 border-t border-slate-100 flex-shrink-0">
+                      <span class="text-slate-500 font-semibold text-xs">${escapeHtml(item.date)}</span>
+                    </div>
                   </div>
                 `).join("")}
               </div>
@@ -835,13 +839,11 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
           return;
         }
 
-        var EVT_PER_PAGE = 3;
-        var evtPagesCount = Math.max(1, Math.ceil(displayEvents.length / EVT_PER_PAGE));
+        var evtPagesCount = displayEvents.length;
         var eventPages = [];
 
         for (var i = 0; i < evtPagesCount; i++) {
-          var slice = displayEvents.slice(i * EVT_PER_PAGE, (i + 1) * EVT_PER_PAGE);
-          var primaryEvent = displayEvents[i * EVT_PER_PAGE] || displayEvents[0];
+          var primaryEvent = displayEvents[i];
           var feat = primaryEvent ? {
             title: primaryEvent.title,
             tagline: primaryEvent.tagline || primaryEvent.description || (isFallback ? "Recently Concluded" : "Registration Open"),
@@ -852,6 +854,12 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
             image: primaryEvent.image || (featuredEvent ? featuredEvent.image : ""),
             ctaLink: getGridEventUrl(primaryEvent),
           } : featuredEvent;
+
+          var sliceCount = Math.min(3, displayEvents.length);
+          var slice = [];
+          for (var k = 0; k < sliceCount; k++) {
+            slice.push(displayEvents[(i + k) % displayEvents.length]);
+          }
 
           eventPages.push({ items: slice, featured: feat });
         }
@@ -942,18 +950,18 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
         for (var p = 0; p < achPages.length; p++) {
           var items = achPages[p];
           var isVis = (p === (achState.current % achPages.length));
-          html += '<div class="sig-ach-page grid grid-cols-2 gap-4 transition-all duration-300" style="' + (isVis ? "" : "display: none;") + '">';
+          html += '<div class="sig-ach-page grid grid-cols-2 gap-4 transition-all duration-300 h-[440px]" style="' + (isVis ? "" : "display: none;") + '">';
           for (var a = 0; a < items.length; a++) {
             var item = items[a];
-            html += '<div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between">' +
-              '<div>' +
-                '<div class="relative rounded-xl overflow-hidden mb-2.5 aspect-16/10 bg-slate-100">' +
+            html += '<div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between h-[440px]">' +
+              '<div class="flex flex-col flex-1 min-h-0">' +
+                '<div class="relative rounded-xl overflow-hidden mb-3 aspect-[16/9] bg-slate-100 h-[250px] w-full flex-shrink-0">' +
                   '<img src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.title) + '" class="w-full h-full object-cover object-center" />' +
                 '</div>' +
-                '<h4 class="font-extrabold text-blue-950 text-base leading-snug mb-1">' + escapeHtml(item.title) + '</h4>' +
-                '<p class="text-slate-600 text-xs leading-relaxed line-clamp-2 mb-2">' + escapeHtml(item.description) + '</p>' +
+                '<h4 class="font-extrabold text-blue-950 text-base leading-snug mb-1 line-clamp-2 h-12 overflow-hidden flex-shrink-0">' + escapeHtml(item.title) + '</h4>' +
+                '<p class="text-slate-600 text-xs leading-relaxed line-clamp-2 mb-2 h-10 overflow-hidden flex-shrink-0">' + escapeHtml(item.description) + '</p>' +
               '</div>' +
-              '<div class="text-blue-600 text-xs font-bold pt-2 border-t border-slate-100">' + escapeHtml(item.date) + '</div>' +
+              '<div class="text-blue-600 text-xs font-bold pt-3.5 pb-1 border-t border-slate-100 flex-shrink-0 flex items-center justify-between">' + escapeHtml(item.date) + '</div>' +
             '</div>';
           }
           html += '</div>';

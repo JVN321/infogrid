@@ -74,7 +74,7 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
 
       {/* Grid of Achievement Cards */}
       <div
-        className={`grid grid-cols-2 gap-4 transition-all duration-300 transform ${
+        className={`grid grid-cols-2 gap-4 h-[440px] transition-all duration-300 transform ${
           isFading ? "opacity-0 scale-[0.98] translate-y-1" : "opacity-100 scale-100 translate-y-0"
         }`}
       >
@@ -82,9 +82,9 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
           ? Array.from({ length: 2 }).map((_, i) => (
               <div
                 key={i}
-                className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-100 shadow-xs animate-pulse"
+                className="bg-white rounded-2xl p-4 border border-slate-100 shadow-xs animate-pulse h-[440px]"
               >
-                <div className="h-32 bg-slate-200 rounded-xl mb-3"></div>
+                <div className="h-60 bg-slate-200 rounded-xl mb-3"></div>
                 <div className="h-4 w-3/4 bg-slate-300 rounded mb-2"></div>
                 <div className="h-3 w-full bg-slate-200 rounded mb-1"></div>
               </div>
@@ -92,11 +92,11 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
           : displayItems.map((item, idx) => (
               <div
                 key={`${item.id}-${idx}`}
-                className="bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between select-none"
+                className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between select-none h-[440px]"
               >
-                <div>
-                  {/* Thumbnail Image */}
-                  <div className="relative rounded-xl overflow-hidden mb-2.5 aspect-16/10 bg-slate-100">
+                <div className="flex flex-col flex-1 min-h-0">
+                  {/* 16:9 Thumbnail Image Container (736x414 aspect ratio) - Increased Size */}
+                  <div className="relative rounded-xl overflow-hidden mb-3 aspect-[16/9] w-full bg-slate-100 h-[250px] flex-shrink-0">
                     <Image
                       src={item.image}
                       alt={item.title}
@@ -107,19 +107,19 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
                   </div>
 
                   {/* Title */}
-                  <h4 className="font-extrabold text-blue-950 text-sm sm:text-base leading-snug mb-1">
+                  <h4 className="font-extrabold text-blue-950 text-base sm:text-lg leading-snug mb-1 line-clamp-2 overflow-hidden flex-shrink-0">
                     {item.title}
                   </h4>
 
                   {/* Description */}
-                  <p className="text-slate-600 text-xs leading-relaxed line-clamp-2 mb-2">
+                  <p className="text-slate-600 text-xs sm:text-sm leading-relaxed line-clamp-2 overflow-hidden flex-shrink-0">
                     {item.description}
                   </p>
                 </div>
 
-                {/* Date */}
-                <div className="text-blue-600 text-xs font-bold pt-2 border-t border-slate-100">
-                  {item.date}
+                {/* Date with increased padding */}
+                <div className="text-blue-600 text-xs sm:text-sm font-bold pt-3.5 pb-1 border-t border-slate-100 flex items-center justify-between flex-shrink-0">
+                  <span>{item.date}</span>
                 </div>
               </div>
             ))}

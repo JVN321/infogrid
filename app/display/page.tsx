@@ -89,38 +89,30 @@ export default function DisplayPage() {
           const genNewsData = await genNewsRes.json();
           const achData = await achRes.json();
           const slidesData = await slidesRes.json();
+          const eventsData = eventsRes.ok ? await eventsRes.json() : null;
 
-          if (Array.isArray(newsData)) {
-            setData((prev) => ({ ...prev, news: newsData }));
-          }
-          if (Array.isArray(genNewsData)) {
-            setData((prev) => ({ ...prev, generalNews: genNewsData }));
-          }
-          if (Array.isArray(achData)) {
-            setData((prev) => ({ ...prev, achievements: achData }));
-          }
-          if (Array.isArray(slidesData)) {
-            setData((prev) => ({
+          setData((prev) => {
+            const nextNews = Array.isArray(newsData) ? newsData : prev.news;
+            const nextGenNews = Array.isArray(genNewsData) ? genNewsData : prev.generalNews;
+            const nextAch = Array.isArray(achData) ? achData : prev.achievements;
+            const nextSlides = Array.isArray(slidesData) && slidesData.length > 0 ? slidesData : prev.heroSlides;
+            const nextEvents = Array.isArray(eventsData) ? eventsData : prev.upcomingEvents;
+
+            const updated: PortalData = {
               ...prev,
-              heroSlides: slidesData.length > 0 ? slidesData : [
-                {
-                  id: "default-1",
-                  welcomeText: "Welcome to",
-                  titleHighlight: "InfoGrid",
-                  tagline: "Stay informed. Stay inspired.",
-                  image: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80",
-                  orderIndex: 0,
-                },
-              ],
-            }));
-          }
-        }
+              news: nextNews,
+              generalNews: nextGenNews,
+              achievements: nextAch,
+              heroSlides: nextSlides,
+              upcomingEvents: nextEvents,
+            };
 
-        if (eventsRes.ok) {
-          const eventsData = await eventsRes.json();
-          if (Array.isArray(eventsData)) {
-            setData((prev) => ({ ...prev, upcomingEvents: eventsData }));
-          }
+            // Skip React re-render if data has not changed
+            if (JSON.stringify(prev) === JSON.stringify(updated)) {
+              return prev;
+            }
+            return updated;
+          });
         }
       } catch (err) {
         console.warn("API sync error, using local data", err);
@@ -130,7 +122,7 @@ export default function DisplayPage() {
     // Initial sync
     syncFromApi();
 
-    // Soft refresh background polling every 2 minutes
+    // Background polling every 2 minutes without visual re-rendering if data is unchanged
     const intervalId = setInterval(() => {
       syncFromApi();
     }, 120 * 1000);
@@ -195,12 +187,6 @@ export default function DisplayPage() {
             <HeroSection slides={data.heroSlides} isSkeleton={isSkeleton} />
 
             {/* Campus & General News Section */}
-            <NewsSection
-              news={data.news}
-              generalNews={data.generalNews}
-              isSkeleton={isSkeleton}
-            />
-
             {/* Campus Events Section */}
             <EventsSection
               featured={data.featuredEvent}
@@ -212,6 +198,13 @@ export default function DisplayPage() {
             {/* Achievements Showcase Section */}
             <AchievementsSection
               achievements={data.achievements}
+              isSkeleton={isSkeleton}
+            />
+
+            {/* Campus & General News Section */}
+            <NewsSection
+              news={data.news}
+              generalNews={data.generalNews}
               isSkeleton={isSkeleton}
             />
 
