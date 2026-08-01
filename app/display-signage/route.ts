@@ -100,21 +100,26 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
     }
   ];
 
-  // News chunking (4 per page)
+  // News chunking (4 per page) — hide sections with 0 items
   const ITEMS_PER_PAGE = 4;
   const campusNews = data.news || [];
   const globalNews = data.generalNews || [];
-  
-  const campusPagesCount = Math.max(1, Math.ceil(campusNews.length / ITEMS_PER_PAGE));
-  const globalPagesCount = Math.ceil(globalNews.length / ITEMS_PER_PAGE);
   const newsPages: { type: "campus" | "global"; items: (NewsItem | GeneralNewsItem)[]; label: string }[] = [];
-  for (let i = 0; i < campusPagesCount; i++) {
-    const slice = campusNews.slice(i * ITEMS_PER_PAGE, (i + 1) * ITEMS_PER_PAGE);
-    newsPages.push({ type: "campus", items: slice, label: "CAMPUS NEWS" });
+
+  if (campusNews.length > 0) {
+    const campusPagesCount = Math.ceil(campusNews.length / ITEMS_PER_PAGE);
+    for (let i = 0; i < campusPagesCount; i++) {
+      const slice = campusNews.slice(i * ITEMS_PER_PAGE, (i + 1) * ITEMS_PER_PAGE);
+      newsPages.push({ type: "campus", items: slice, label: "CAMPUS NEWS" });
+    }
   }
-  for (let i = 0; i < globalPagesCount; i++) {
-    const slice = globalNews.slice(i * ITEMS_PER_PAGE, (i + 1) * ITEMS_PER_PAGE);
-    newsPages.push({ type: "global", items: slice, label: "GLOBAL NEWS" });
+
+  if (globalNews.length > 0) {
+    const globalPagesCount = Math.ceil(globalNews.length / ITEMS_PER_PAGE);
+    for (let i = 0; i < globalPagesCount; i++) {
+      const slice = globalNews.slice(i * ITEMS_PER_PAGE, (i + 1) * ITEMS_PER_PAGE);
+      newsPages.push({ type: "global", items: slice, label: "GLOBAL NEWS" });
+    }
   }
 
   // Events processing — active events first, then finished as fallback
@@ -264,17 +269,21 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
             </h3>
           </div>
 
-          <div id="sig-news-container" class="relative min-h-[315px]">
-            ${newsPages.map((page, pIdx) => `
+          <div id="sig-news-container" class="relative min-h-[365px]">
+            ${newsPages.length === 0 ? `
+              <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center h-[365px]">
+                <h4 class="font-extrabold text-blue-950 text-base mb-1">No News Available</h4>
+              </div>
+            ` : newsPages.map((page, pIdx) => `
               <div
                 class="sig-news-page grid grid-cols-4 gap-4 transition-all duration-300"
                 style="${pIdx === 0 ? "" : "display: none;"}"
                 data-label="${escapeHtml(page.label)}"
               >
                 ${page.items.map((item) => `
-                  <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between h-[320px]">
+                  <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between h-[365px]">
                     <div class="flex flex-col flex-1 justify-start min-h-0">
-                      <div class="relative rounded-xl overflow-hidden mb-2.5 h-[125px] w-full bg-slate-100 flex-shrink-0">
+                      <div class="relative rounded-xl overflow-hidden mb-2.5 h-[160px] w-full bg-slate-100 flex-shrink-0">
                         <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover object-center" />
                       </div>
                       <div class="mb-1.5 h-5 flex items-center justify-between flex-shrink-0">
@@ -287,10 +296,10 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
                           </span>
                         ` : ""}
                       </div>
-                      <div class="h-11 mb-1 flex items-start overflow-hidden flex-shrink-0">
+                      <div class="h-12 mb-1 flex items-start overflow-hidden flex-shrink-0">
                         <h4 class="font-extrabold text-blue-950 text-sm leading-snug line-clamp-2">${escapeHtml(item.title)}</h4>
                       </div>
-                      <div class="h-10 overflow-hidden flex-shrink-0">
+                      <div class="h-12 overflow-hidden flex-shrink-0">
                         <p class="text-slate-600 text-xs leading-relaxed line-clamp-2">${escapeHtml(item.description)}</p>
                       </div>
                     </div>
@@ -308,7 +317,7 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
         <section class="my-2 flex-shrink-0">
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-2">
-              <h3 class="text-base font-extrabold text-blue-950 tracking-tight uppercase">CAMPUS EVENTS</h3>
+              <h3 class="text-base font-extrabold text-blue-950 tracking-tight uppercase">EVENTS</h3>
               <span id="sig-events-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full border ${isEvtFallback ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-blue-600 bg-blue-50 border-blue-200'}">
                 ${isEvtFallback ? `${displayEvents.length} Recent` : `${displayEvents.length} Active`}
               </span>
@@ -328,7 +337,7 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
                 style="${pIdx === 0 ? "" : "display: none;"}"
               >
                 <!-- Left: Featured Event -->
-                <div class="col-span-5 relative rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-5 min-h-[230px] border border-blue-900/30 bg-slate-900">
+                <div class="col-span-5 relative rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-5 min-h-[275px] border border-blue-900/30 bg-slate-900">
                   <img src="${escapeHtml(page.featured.image)}" alt="${escapeHtml(page.featured.title)}" class="absolute inset-0 w-full h-full object-cover object-center" />
                   <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-blue-950/80 to-blue-950/40"></div>
                   <div class="relative z-10 flex items-start justify-between">
@@ -362,8 +371,8 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
                 <!-- Right: Upcoming Events List -->
                 <div class="col-span-7 flex flex-col justify-between space-y-2">
                   ${page.items.map((evt) => {
-                    const colors = getDateColorClasses(evt.color);
-                    return `
+    const colors = getDateColorClasses(evt.color);
+    return `
                       <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2.5 min-w-0">
                           <div class="w-12 h-12 rounded-xl border flex flex-col items-center justify-center flex-shrink-0 shadow-2xs ${colors.bg}">
@@ -384,7 +393,7 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
                         </div>
                       </div>
                     `;
-                  }).join("")}
+  }).join("")}
                 </div>
               </div>
             `).join("")}
@@ -729,19 +738,22 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
         var campusList = campusNews || [];
         var globalList = globalNews || [];
 
-        var campusPagesCount = Math.max(1, Math.ceil(campusList.length / ITEMS_PER_PAGE));
-        var globalPagesCount = Math.ceil(globalList.length / ITEMS_PER_PAGE);
-
         var newsPages = [];
-        for (var c = 0; c < campusPagesCount; c++) {
-          newsPages.push({ type: "campus", items: campusList.slice(c * ITEMS_PER_PAGE, (c + 1) * ITEMS_PER_PAGE), label: "CAMPUS NEWS" });
+        if (campusList.length > 0) {
+          var campusPagesCount = Math.ceil(campusList.length / ITEMS_PER_PAGE);
+          for (var c = 0; c < campusPagesCount; c++) {
+            newsPages.push({ type: "campus", items: campusList.slice(c * ITEMS_PER_PAGE, (c + 1) * ITEMS_PER_PAGE), label: "CAMPUS NEWS" });
+          }
         }
-        for (var g = 0; g < globalPagesCount; g++) {
-          newsPages.push({ type: "global", items: globalList.slice(g * ITEMS_PER_PAGE, (g + 1) * ITEMS_PER_PAGE), label: "GLOBAL NEWS" });
+        if (globalList.length > 0) {
+          var globalPagesCount = Math.ceil(globalList.length / ITEMS_PER_PAGE);
+          for (var g = 0; g < globalPagesCount; g++) {
+            newsPages.push({ type: "global", items: globalList.slice(g * ITEMS_PER_PAGE, (g + 1) * ITEMS_PER_PAGE), label: "GLOBAL NEWS" });
+          }
         }
 
         if (newsPages.length === 0) {
-          container.innerHTML = '<div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center h-[315px]"><h4 class="font-extrabold text-blue-950 text-base mb-1">No News Available</h4></div>';
+          container.innerHTML = '<div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center h-[365px]"><h4 class="font-extrabold text-blue-950 text-base mb-1">No News Available</h4></div>';
           return;
         }
 
@@ -755,19 +767,19 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
             var tagClass = getTagColorClass(item.tagColor);
             var sourceText = item.source ? '<span class="text-[9px] font-bold text-slate-400 truncate max-w-[50%]">' + escapeHtml(item.source) + '</span>' : '';
 
-            html += '<div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between h-[320px]">' +
+            html += '<div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between h-[365px]">' +
               '<div class="flex flex-col flex-1 justify-start min-h-0">' +
-                '<div class="relative rounded-xl overflow-hidden mb-2.5 h-[125px] w-full bg-slate-100 flex-shrink-0">' +
+                '<div class="relative rounded-xl overflow-hidden mb-2.5 h-[160px] w-full bg-slate-100 flex-shrink-0">' +
                   '<img src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.title) + '" class="w-full h-full object-cover object-center" />' +
                 '</div>' +
                 '<div class="mb-1.5 h-5 flex items-center justify-between flex-shrink-0">' +
                   '<span class="inline-block px-2 py-0.5 text-[10px] font-extrabold rounded-md border tracking-wider uppercase ' + tagClass + '">' + escapeHtml(item.tag) + '</span>' +
                   sourceText +
                 '</div>' +
-                '<div class="h-11 mb-1 flex items-start overflow-hidden flex-shrink-0">' +
+                '<div class="h-12 mb-1 flex items-start overflow-hidden flex-shrink-0">' +
                   '<h4 class="font-extrabold text-blue-950 text-sm leading-snug line-clamp-2">' + escapeHtml(item.title) + '</h4>' +
                 '</div>' +
-                '<div class="h-10 overflow-hidden flex-shrink-0">' +
+                '<div class="h-12 overflow-hidden flex-shrink-0">' +
                   '<p class="text-slate-600 text-xs leading-relaxed line-clamp-2">' + escapeHtml(item.description) + '</p>' +
                 '</div>' +
               '</div>' +
@@ -853,7 +865,7 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
             '</div>' : '';
 
           html += '<div class="sig-evt-page grid grid-cols-12 gap-3 items-stretch" style="' + (isVis ? "" : "display: none;") + '">' +
-            '<div class="col-span-5 relative rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-5 min-h-[230px] border border-blue-900/30 bg-slate-900">' +
+            '<div class="col-span-5 relative rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-5 min-h-[275px] border border-blue-900/30 bg-slate-900">' +
               '<img src="' + escapeHtml(page.featured.image) + '" alt="' + escapeHtml(page.featured.title) + '" class="absolute inset-0 w-full h-full object-cover object-center" />' +
               '<div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-blue-950/80 to-blue-950/40"></div>' +
               '<div class="relative z-10 flex items-start justify-between">' +
@@ -953,8 +965,19 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
         if (portalData.achievements) patchAchievements(portalData.achievements);
       }
 
-      /* Soft Data Sync Poller (Every 2 Minutes - NO PAGE RELOAD) */
-      setInterval(function () {
+      /* Silent Idle Background Sync (No Timers, No Visual Interruption) */
+      function scheduleBackgroundFetch() {
+        var delay = 90000; // 90 seconds silent background fetch
+        if (typeof window.requestIdleCallback === "function") {
+          setTimeout(function () {
+            window.requestIdleCallback(syncDataInBackground, { timeout: 10000 });
+          }, delay);
+        } else {
+          setTimeout(syncDataInBackground, delay);
+        }
+      }
+
+      function syncDataInBackground() {
         try {
           var currentVer = document.body ? document.body.getAttribute("data-version") : null;
           fetch("/display-signage/data?t=" + new Date().getTime(), { cache: "no-store" })
@@ -965,11 +988,16 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
                 patchDOM(resData.data);
               }
             })
-            .catch(function () {
-              /* Ignore network errors gracefully on webOS kiosk */
+            .catch(function () {})
+            .then(function () {
+              scheduleBackgroundFetch();
             });
-        } catch (e) {}
-      }, 120000);
+        } catch (e) {
+          scheduleBackgroundFetch();
+        }
+      }
+
+      scheduleBackgroundFetch();
     })();
   </script>
 </body>

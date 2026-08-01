@@ -61,19 +61,19 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
   const primaryEvent = filteredUpcoming[featuredIndex] || filteredUpcoming[0];
   const activeFeatured = primaryEvent
     ? {
-        title: primaryEvent.title,
-        tagline: primaryEvent.tagline || primaryEvent.description || "Registration Open",
-        badge: primaryEvent.badge || primaryEvent.category || "Featured Event",
-        dateRange: primaryEvent.dateRange || primaryEvent.date || "",
-        venue: primaryEvent.venue || "Campus",
-        image: primaryEvent.image || featured.image,
-        ctaText: primaryEvent.ctaText || "Register Now",
-        ctaLink: getGridEventUrl(primaryEvent),
-      }
+      title: primaryEvent.title,
+      tagline: primaryEvent.tagline || primaryEvent.description || "Registration Open",
+      badge: primaryEvent.badge || primaryEvent.category || "Featured Event",
+      dateRange: primaryEvent.dateRange || primaryEvent.date || "",
+      venue: primaryEvent.venue || "Campus",
+      image: primaryEvent.image || featured.image,
+      ctaText: primaryEvent.ctaText || "Register Now",
+      ctaLink: getGridEventUrl(primaryEvent),
+    }
     : {
-        ...featured,
-        ctaLink: getGridEventUrl(featured),
-      };
+      ...featured,
+      ctaLink: getGridEventUrl(featured),
+    };
 
   const totalPages = Math.ceil(filteredUpcoming.length / ITEMS_PER_PAGE) || 1;
 
@@ -136,9 +136,9 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
     filteredUpcoming.length <= ITEMS_PER_PAGE
       ? filteredUpcoming
       : Array.from({ length: ITEMS_PER_PAGE }).map((_, j) => {
-          const startIndex = currentPage * ITEMS_PER_PAGE;
-          return filteredUpcoming[(startIndex + j) % filteredUpcoming.length];
-        });
+        const startIndex = currentPage * ITEMS_PER_PAGE;
+        return filteredUpcoming[(startIndex + j) % filteredUpcoming.length];
+      });
 
   const handlePrevPage = () => {
     changePage((currentPage - 1 + totalPages) % totalPages);
@@ -154,13 +154,12 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div className="flex items-center gap-2">
           <h3 className="text-sm sm:text-base font-extrabold text-blue-950 tracking-tight uppercase">
-            CAMPUS EVENTS
+            EVENTS
           </h3>
-          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-            isShowingFallback
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${isShowingFallback
               ? "text-amber-700 bg-amber-50 border-amber-200"
               : "text-blue-600 bg-blue-50 border-blue-200"
-          }`}>
+            }`}>
             {isShowingFallback
               ? `${filteredUpcoming.length} Recent`
               : `${openEvents.length} Open (${filteredUpcoming.length} Shown)`}
@@ -196,9 +195,8 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
       {/* 2 Column Split Layout - Constrained Height for 9:16 Screens */}
       <div className="grid grid-cols-12 gap-3 items-stretch">
         {/* Left Column: Featured Event Card Banner */}
-        <div className={`col-span-5 relative rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-5 min-h-[230px] border border-blue-900/30 select-none group bg-slate-900 transition-all duration-300 transform ${
-          isFading ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"
-        }`}>
+        <div className={`col-span-5 relative rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-5 min-h-[275px] border border-blue-900/30 select-none group bg-slate-900 transition-all duration-300 transform ${isFading ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"
+          }`}>
           <Image
             src={activeFeatured.image}
             alt={activeFeatured.title}
@@ -259,9 +257,8 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
         {/* Right Column: Upcoming Events Looping Carousel Container */}
         <div
-          className={`col-span-7 flex flex-col justify-between space-y-2 transition-all duration-300 transform ${
-            isFading ? "opacity-0 translate-x-1 scale-[0.99]" : "opacity-100 translate-x-0 scale-100"
-          }`}
+          className={`col-span-7 flex flex-col justify-between space-y-2 transition-all duration-300 transform ${isFading ? "opacity-0 translate-x-1 scale-[0.99]" : "opacity-100 translate-x-0 scale-100"
+            }`}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
