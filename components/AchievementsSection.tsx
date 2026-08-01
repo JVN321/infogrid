@@ -17,7 +17,7 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
   const [isFading, setIsFading] = useState(false);
 
-  const ITEMS_PER_PAGE = 4;
+  const ITEMS_PER_PAGE = 2;
   const totalPages = Math.ceil(achievements.length / ITEMS_PER_PAGE) || 1;
 
   const changePage = (newPage: number) => {
@@ -74,12 +74,12 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
 
       {/* Grid of Achievement Cards */}
       <div
-        className={`grid grid-cols-4 gap-4 transition-all duration-300 transform ${
+        className={`grid grid-cols-2 gap-4 transition-all duration-300 transform ${
           isFading ? "opacity-0 scale-[0.98] translate-y-1" : "opacity-100 scale-100 translate-y-0"
         }`}
       >
         {isSkeleton
-          ? Array.from({ length: 4 }).map((_, i) => (
+          ? Array.from({ length: 2 }).map((_, i) => (
               <div
                 key={i}
                 className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-100 shadow-xs animate-pulse"
@@ -101,7 +101,7 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
                       src={item.image}
                       alt={item.title}
                       fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      sizes="(max-width: 640px) 100vw, 50vw"
                       className="object-cover object-center"
                     />
                   </div>

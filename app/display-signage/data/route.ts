@@ -44,20 +44,16 @@ export async function GET(req: NextRequest) {
 
     const dataVersion = computeDataVersion(news, generalNews, events, achievements, slides);
 
-    // Filter out past and finished events completely
+    // Sort events: active/open first, then finished — never hide all events
+    const finishedEvents = events.filter((evt) => {
+      const cat = (evt.category || "").toLowerCase();
+      return cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended");
+    });
     const activeEvents = events.filter((evt) => {
       const cat = (evt.category || "").toLowerCase();
-      if (cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended")) {
-        return false;
-      }
-      if (evt.date) {
-        const evtDate = new Date(evt.date);
-        if (!isNaN(evtDate.getTime()) && evtDate < today) {
-          return false;
-        }
-      }
-      return true;
+      return !(cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended"));
     });
+    const allEventsSorted = [...activeEvents, ...finishedEvents];
 
     const portalData: PortalData = {
       header: defaultSkeletonData.header,
@@ -73,8 +69,17 @@ export async function GET(req: NextRequest) {
         ctaText: activeEvents[0].ctaText || "Register Now",
         image: activeEvents[0].image || "",
         ctaLink: getGridEventUrl(activeEvents[0]),
-      } : defaultSkeletonData.featuredEvent,
-      upcomingEvents: activeEvents as any,
+      } : (allEventsSorted.length > 0 ? {
+        title: allEventsSorted[0].title,
+        tagline: allEventsSorted[0].tagline || allEventsSorted[0].description || "",
+        badge: allEventsSorted[0].badge || allEventsSorted[0].category || "Recent Event",
+        dateRange: allEventsSorted[0].dateRange || allEventsSorted[0].date || "",
+        venue: allEventsSorted[0].venue || "Campus",
+        ctaText: "View Details",
+        image: allEventsSorted[0].image || "",
+        ctaLink: getGridEventUrl(allEventsSorted[0]),
+      } : defaultSkeletonData.featuredEvent),
+      upcomingEvents: allEventsSorted as any,
       achievements: achievements as any,
       footer: defaultSkeletonData.footer,
     };

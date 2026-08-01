@@ -117,26 +117,33 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
     newsPages.push({ type: "global", items: slice, label: "GLOBAL NEWS" });
   }
 
-  // Events processing - ONLY active & open events (excluding finished/past events)
-  const openEvents = (data.upcomingEvents || []).filter((evt) => {
+  // Events processing — active events first, then finished as fallback
+  const openEvts = (data.upcomingEvents || []).filter((evt) => {
     const cat = (evt.category || "").toLowerCase();
     return !(cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended"));
   });
+  const finishedEvts = (data.upcomingEvents || []).filter((evt) => {
+    const cat = (evt.category || "").toLowerCase();
+    return cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended");
+  });
+  // Show fallback (all events) if there are no active ones
+  const isEvtFallback = openEvts.length === 0 && finishedEvts.length > 0;
+  const displayEvents = isEvtFallback ? finishedEvts : openEvts;
 
   const EVT_PER_PAGE = 3;
-  const evtPagesCount = Math.max(1, Math.ceil(openEvents.length / EVT_PER_PAGE));
+  const evtPagesCount = Math.max(1, Math.ceil(displayEvents.length / EVT_PER_PAGE));
   const eventPages: { items: UpcomingEvent[]; featured: any }[] = [];
 
   for (let i = 0; i < evtPagesCount; i++) {
-    const slice = openEvents.slice(i * EVT_PER_PAGE, (i + 1) * EVT_PER_PAGE);
-    const primaryEvent = openEvents[i * EVT_PER_PAGE] || openEvents[0];
+    const slice = displayEvents.slice(i * EVT_PER_PAGE, (i + 1) * EVT_PER_PAGE);
+    const primaryEvent = displayEvents[i * EVT_PER_PAGE] || displayEvents[0];
     const feat = primaryEvent ? {
       title: primaryEvent.title,
-      tagline: primaryEvent.tagline || primaryEvent.description || "Registration Open",
+      tagline: primaryEvent.tagline || primaryEvent.description || (isEvtFallback ? "Recently Concluded" : "Registration Open"),
       badge: primaryEvent.badge || primaryEvent.category || "Featured Event",
       dateRange: primaryEvent.dateRange || primaryEvent.date || "",
       venue: primaryEvent.venue || "Campus",
-      ctaText: primaryEvent.ctaText || "Register Now",
+      ctaText: primaryEvent.ctaText || (isEvtFallback ? "View Details" : "Register Now"),
       image: primaryEvent.image || data.featuredEvent.image,
       ctaLink: getGridEventUrl(primaryEvent),
     } : defaultSkeletonData.featuredEvent;
@@ -144,12 +151,13 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
     eventPages.push({ items: slice, featured: feat });
   }
 
-  // Achievements chunking (4 per page)
+  // Achievements chunking (2 per page for better image visibility)
+  const ACH_PER_PAGE = 2;
   const achList = data.achievements || [];
-  const achPagesCount = Math.max(1, Math.ceil(achList.length / ITEMS_PER_PAGE));
+  const achPagesCount = Math.max(1, Math.ceil(achList.length / ACH_PER_PAGE));
   const achPages: AchievementItem[][] = [];
   for (let i = 0; i < achPagesCount; i++) {
-    achPages.push(achList.slice(i * ITEMS_PER_PAGE, (i + 1) * ITEMS_PER_PAGE));
+    achPages.push(achList.slice(i * ACH_PER_PAGE, (i + 1) * ACH_PER_PAGE));
   }
 
   const collegeTitle = escapeHtml(data.header.collegeSub ? `${data.header.collegeName} ${data.header.collegeSub}` : data.header.collegeName);
@@ -301,14 +309,14 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-2">
               <h3 class="text-base font-extrabold text-blue-950 tracking-tight uppercase">CAMPUS EVENTS</h3>
-              <span id="sig-events-badge" class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                ${openEvents.length} Active
+              <span id="sig-events-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full border ${isEvtFallback ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-blue-600 bg-blue-50 border-blue-200'}">
+                ${isEvtFallback ? `${displayEvents.length} Recent` : `${displayEvents.length} Active`}
               </span>
             </div>
           </div>
 
           <div id="sig-events-container" class="relative">
-            ${openEvents.length === 0 ? `
+            ${displayEvents.length === 0 ? `
               <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center my-2 min-h-[230px]">
                 <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xl mb-2">📅</div>
                 <h4 class="font-extrabold text-blue-950 text-base mb-1">No Active Events Scheduled</h4>
@@ -392,7 +400,7 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
           <div id="sig-ach-container" class="relative">
             ${achPages.map((items, pIdx) => `
               <div
-                class="sig-ach-page grid grid-cols-4 gap-4 transition-all duration-300"
+                class="sig-ach-page grid grid-cols-2 gap-4 transition-all duration-300"
                 style="${pIdx === 0 ? "" : "display: none;"}"
               >
                 ${items.map((item) => `
@@ -785,34 +793,47 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
         var badgeEl = document.getElementById("sig-events-badge");
         if (!container) return;
 
-        var openEvents = (upcomingEvents || []).filter(function (evt) {
+        var allEvents = upcomingEvents || [];
+        var openEvents = allEvents.filter(function (evt) {
           var cat = (evt.category || "").toLowerCase();
           return !(cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended"));
         });
+        var finishedEvts = allEvents.filter(function (evt) {
+          var cat = (evt.category || "").toLowerCase();
+          return cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended");
+        });
+        var isFallback = openEvents.length === 0 && finishedEvts.length > 0;
+        var displayEvents = isFallback ? finishedEvts : openEvents;
 
         if (badgeEl) {
-          badgeEl.textContent = openEvents.length + " Active";
+          if (isFallback) {
+            badgeEl.className = "text-[11px] font-bold px-2 py-0.5 rounded-full border text-amber-700 bg-amber-50 border-amber-200";
+            badgeEl.textContent = displayEvents.length + " Recent";
+          } else {
+            badgeEl.className = "text-[11px] font-bold px-2 py-0.5 rounded-full border text-blue-600 bg-blue-50 border-blue-200";
+            badgeEl.textContent = displayEvents.length + " Active";
+          }
         }
 
-        if (openEvents.length === 0) {
+        if (displayEvents.length === 0) {
           container.innerHTML = '<div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center my-2 min-h-[230px]"><div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xl mb-2">📅</div><h4 class="font-extrabold text-blue-950 text-base mb-1">No Active Events Scheduled</h4><p class="text-slate-500 text-xs max-w-sm">New campus events will appear here once published.</p></div>';
           return;
         }
 
         var EVT_PER_PAGE = 3;
-        var evtPagesCount = Math.max(1, Math.ceil(openEvents.length / EVT_PER_PAGE));
+        var evtPagesCount = Math.max(1, Math.ceil(displayEvents.length / EVT_PER_PAGE));
         var eventPages = [];
 
         for (var i = 0; i < evtPagesCount; i++) {
-          var slice = openEvents.slice(i * EVT_PER_PAGE, (i + 1) * EVT_PER_PAGE);
-          var primaryEvent = openEvents[i * EVT_PER_PAGE] || openEvents[0];
+          var slice = displayEvents.slice(i * EVT_PER_PAGE, (i + 1) * EVT_PER_PAGE);
+          var primaryEvent = displayEvents[i * EVT_PER_PAGE] || displayEvents[0];
           var feat = primaryEvent ? {
             title: primaryEvent.title,
-            tagline: primaryEvent.tagline || primaryEvent.description || "Registration Open",
+            tagline: primaryEvent.tagline || primaryEvent.description || (isFallback ? "Recently Concluded" : "Registration Open"),
             badge: primaryEvent.badge || primaryEvent.category || "Featured Event",
             dateRange: primaryEvent.dateRange || primaryEvent.date || "",
             venue: primaryEvent.venue || "Campus",
-            ctaText: primaryEvent.ctaText || "Register Now",
+            ctaText: primaryEvent.ctaText || (isFallback ? "View Details" : "Register Now"),
             image: primaryEvent.image || (featuredEvent ? featuredEvent.image : ""),
             ctaLink: getGridEventUrl(primaryEvent),
           } : featuredEvent;
@@ -886,7 +907,7 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
         var container = document.getElementById("sig-ach-container");
         if (!container) return;
 
-        var ITEMS_PER_PAGE = 4;
+        var ITEMS_PER_PAGE = 2;
         var achList = achievements || [];
         var achPagesCount = Math.max(1, Math.ceil(achList.length / ITEMS_PER_PAGE));
         var achPages = [];
@@ -903,7 +924,7 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
         for (var p = 0; p < achPages.length; p++) {
           var items = achPages[p];
           var isVis = (p === (achState.current % achPages.length));
-          html += '<div class="sig-ach-page grid grid-cols-4 gap-4 transition-all duration-300" style="' + (isVis ? "" : "display: none;") + '">';
+          html += '<div class="sig-ach-page grid grid-cols-2 gap-4 transition-all duration-300" style="' + (isVis ? "" : "display: none;") + '">';
           for (var a = 0; a < items.length; a++) {
             var item = items[a];
             html += '<div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between">' +
@@ -970,37 +991,42 @@ export async function GET(req: NextRequest) {
 
     const dataVersion = computeDataVersion(news, generalNews, events, achievements, slides);
 
-    // Filter out past and finished events completely so ONLY active events are displayed
-    const activeEvents = events.filter((evt) => {
+    // Sort events: active/open first, then finished — never hide all events
+    const finishedEventsDb = events.filter((evt) => {
       const cat = (evt.category || "").toLowerCase();
-      if (cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended")) {
-        return false;
-      }
-      if (evt.date) {
-        const evtDate = new Date(evt.date);
-        if (!isNaN(evtDate.getTime()) && evtDate < today) {
-          return false;
-        }
-      }
-      return true;
+      return cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended");
     });
+    const activeEventsDb = events.filter((evt) => {
+      const cat = (evt.category || "").toLowerCase();
+      return !(cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended"));
+    });
+    const allEventsSorted = [...activeEventsDb, ...finishedEventsDb];
 
     const portalData: PortalData = {
       header: defaultSkeletonData.header,
       heroSlides: slides as any,
       news: news as any,
       generalNews: generalNews as any,
-      featuredEvent: activeEvents.length > 0 ? {
-        title: activeEvents[0].title,
-        tagline: activeEvents[0].tagline || activeEvents[0].description || "",
-        badge: activeEvents[0].badge || activeEvents[0].category || "Featured Event",
-        dateRange: activeEvents[0].dateRange || activeEvents[0].date || "",
-        venue: activeEvents[0].venue || "Campus",
-        ctaText: activeEvents[0].ctaText || "Register Now",
-        image: activeEvents[0].image || "",
-        ctaLink: getGridEventUrl(activeEvents[0]),
-      } : defaultSkeletonData.featuredEvent,
-      upcomingEvents: activeEvents as any,
+      featuredEvent: activeEventsDb.length > 0 ? {
+        title: activeEventsDb[0].title,
+        tagline: activeEventsDb[0].tagline || activeEventsDb[0].description || "",
+        badge: activeEventsDb[0].badge || activeEventsDb[0].category || "Featured Event",
+        dateRange: activeEventsDb[0].dateRange || activeEventsDb[0].date || "",
+        venue: activeEventsDb[0].venue || "Campus",
+        ctaText: activeEventsDb[0].ctaText || "Register Now",
+        image: activeEventsDb[0].image || "",
+        ctaLink: getGridEventUrl(activeEventsDb[0]),
+      } : (allEventsSorted.length > 0 ? {
+        title: allEventsSorted[0].title,
+        tagline: allEventsSorted[0].tagline || allEventsSorted[0].description || "",
+        badge: allEventsSorted[0].badge || allEventsSorted[0].category || "Recent Event",
+        dateRange: allEventsSorted[0].dateRange || allEventsSorted[0].date || "",
+        venue: allEventsSorted[0].venue || "Campus",
+        ctaText: "View Details",
+        image: allEventsSorted[0].image || "",
+        ctaLink: getGridEventUrl(allEventsSorted[0]),
+      } : defaultSkeletonData.featuredEvent),
+      upcomingEvents: allEventsSorted as any,
       achievements: achievements as any,
       footer: defaultSkeletonData.footer,
     };
