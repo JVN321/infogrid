@@ -95,14 +95,14 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
                 className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between select-none h-[440px]"
               >
                 <div className="flex flex-col flex-1 min-h-0">
-                  {/* 16:9 Thumbnail Image Container (736x414 aspect ratio) - Increased Size */}
-                  <div className="relative rounded-xl overflow-hidden mb-3 aspect-[16/9] w-full bg-slate-100 h-[250px] flex-shrink-0">
+                  {/* 16:9 Thumbnail Image Container (736x414 aspect ratio) - Fit with clean white fill */}
+                  <div className="relative rounded-xl overflow-hidden mb-3 aspect-[16/9] w-full bg-white border border-slate-100 flex items-center justify-center h-[250px] flex-shrink-0 p-1">
                     <Image
                       src={item.image}
                       alt={item.title}
                       fill
                       sizes="(max-width: 640px) 100vw, 50vw"
-                      className="object-cover object-center"
+                      className="object-contain object-center"
                     />
                   </div>
 

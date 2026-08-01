@@ -370,8 +370,8 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
                 ${items.map((item) => `
                   <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between h-[440px]">
                     <div class="flex flex-col flex-1 min-h-0">
-                      <div class="relative rounded-xl overflow-hidden mb-3 aspect-[16/9] bg-slate-100 h-[250px] w-full flex-shrink-0">
-                        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover object-center" />
+                      <div class="relative rounded-xl overflow-hidden mb-3 aspect-[16/9] bg-white border border-slate-100 flex items-center justify-center h-[250px] w-full flex-shrink-0 p-1">
+                        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" class="w-full h-full object-contain object-center" />
                       </div>
                       <h4 class="font-extrabold text-blue-950 text-base leading-snug mb-1 line-clamp-2 h-12 overflow-hidden flex-shrink-0">${escapeHtml(item.title)}</h4>
                       <p class="text-slate-600 text-xs leading-relaxed line-clamp-2 mb-2 h-10 overflow-hidden flex-shrink-0">${escapeHtml(item.description)}</p>
@@ -955,8 +955,8 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
             var item = items[a];
             html += '<div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between h-[440px]">' +
               '<div class="flex flex-col flex-1 min-h-0">' +
-                '<div class="relative rounded-xl overflow-hidden mb-3 aspect-[16/9] bg-slate-100 h-[250px] w-full flex-shrink-0">' +
-                  '<img src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.title) + '" class="w-full h-full object-cover object-center" />' +
+                '<div class="relative rounded-xl overflow-hidden mb-3 aspect-[16/9] bg-white border border-slate-100 flex items-center justify-center h-[250px] w-full flex-shrink-0 p-1">' +
+                  '<img src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.title) + '" class="w-full h-full object-contain object-center" />' +
                 '</div>' +
                 '<h4 class="font-extrabold text-blue-950 text-base leading-snug mb-1 line-clamp-2 h-12 overflow-hidden flex-shrink-0">' + escapeHtml(item.title) + '</h4>' +
                 '<p class="text-slate-600 text-xs leading-relaxed line-clamp-2 mb-2 h-10 overflow-hidden flex-shrink-0">' + escapeHtml(item.description) + '</p>' +
