@@ -44,10 +44,17 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
     return cat.includes("closed") || cat.includes("finished") || cat.includes("completed") || cat.includes("ended");
   });
 
-  const filteredUpcoming = [
+  const primaryFiltered = [
     ...openEvents,
     ...finishedEvents.slice(0, maxFinishedEvents),
   ];
+
+  // Always show at least some events — if primaryFiltered is empty (e.g. all events are finished
+  // and maxFinishedEvents is 0), fall back to the full list with active events prioritised first.
+  const isShowingFallback = primaryFiltered.length === 0 && upcoming.length > 0;
+  const filteredUpcoming = isShowingFallback
+    ? [...openEvents, ...finishedEvents]
+    : primaryFiltered;
 
   // Pick active event for featured card based on currentPage so it cycles dynamically with pagination/slideshow
   const featuredIndex = (currentPage * ITEMS_PER_PAGE) % (filteredUpcoming.length || 1);
@@ -149,8 +156,14 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
           <h3 className="text-sm sm:text-base font-extrabold text-blue-950 tracking-tight uppercase">
             CAMPUS EVENTS
           </h3>
-          <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-            {openEvents.length} Open ({filteredUpcoming.length} Shown)
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+            isShowingFallback
+              ? "text-amber-700 bg-amber-50 border-amber-200"
+              : "text-blue-600 bg-blue-50 border-blue-200"
+          }`}>
+            {isShowingFallback
+              ? `${filteredUpcoming.length} Recent`
+              : `${openEvents.length} Open (${filteredUpcoming.length} Shown)`}
           </span>
         </div>
 

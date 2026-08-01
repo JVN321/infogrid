@@ -116,6 +116,7 @@ export default function AdminPage() {
     venue: string;
     category: string;
     ctaLink: string;
+    image: string;
   }>({
     day: "15",
     month: "JUN",
@@ -125,6 +126,7 @@ export default function AdminPage() {
     venue: "Main Auditorium",
     category: "Workshop",
     ctaLink: "https://mitsmediaclub.com/events",
+    image: "",
   });
 
   // Form states for Achievements
@@ -609,7 +611,7 @@ export default function AdminPage() {
   // Upload image handler via Cloudflare R2 API
   const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    target: "news" | "generalNews" | "achievement" | "hero"
+    target: "news" | "generalNews" | "achievement" | "hero" | "event"
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -632,6 +634,8 @@ export default function AdminPage() {
           setGenNewsForm((prev) => ({ ...prev, image: data.url }));
         } else if (target === "hero") {
           setHeroForm((prev) => ({ ...prev, image: data.url }));
+        } else if (target === "event") {
+          setEventForm((prev) => ({ ...prev, image: data.url }));
         } else {
           setAchievementForm((prev) => ({ ...prev, image: data.url }));
         }
@@ -906,6 +910,7 @@ export default function AdminPage() {
       category: eventForm.category,
       categoryBadgeBg: badgeBgMap[eventForm.color],
       ctaLink: eventForm.ctaLink,
+      image: eventForm.image || undefined,
     };
 
     let updatedList: UpcomingEvent[] = [];
@@ -963,6 +968,7 @@ export default function AdminPage() {
       venue: item.venue,
       category: item.category,
       ctaLink: item.ctaLink || "#",
+      image: item.image || "",
     });
     window.scrollTo({ top: 300, behavior: "smooth" });
   };
@@ -995,6 +1001,7 @@ export default function AdminPage() {
       venue: "Main Auditorium",
       category: "Workshop",
       ctaLink: "https://mitsmediaclub.com/events",
+      image: "",
     });
   };
 
@@ -1900,6 +1907,48 @@ export default function AdminPage() {
                     className="w-full text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   />
                 </div>
+              </div>
+
+              {/* Image URL + Upload */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Event Image (optional)</label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder="https://... (paste image URL)"
+                    value={eventForm.image}
+                    onChange={(e) => setEventForm({ ...eventForm, image: e.target.value })}
+                    className="flex-1 text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                  />
+                  <label
+                    className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
+                      uploadingImage
+                        ? "bg-slate-800 text-slate-400 border-slate-700 cursor-not-allowed"
+                        : "bg-slate-800 hover:bg-slate-700 text-sky-300 border-slate-700 hover:border-sky-500"
+                    }`}
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    {uploadingImage ? "Uploading…" : "Upload"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingImage}
+                      onChange={(e) => handleImageUpload(e, "event")}
+                    />
+                  </label>
+                </div>
+                {eventForm.image && (
+                  <div className="mt-2 relative w-full h-24 rounded-xl overflow-hidden border border-slate-700">
+                    <NextImage
+                      src={eventForm.image}
+                      alt="Event preview"
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
+                )}
               </div>
 
               <button
