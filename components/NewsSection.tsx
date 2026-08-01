@@ -91,7 +91,8 @@ export const NewsSection: React.FC<NewsSectionProps> = ({
   const currentItems = useMemo(() => {
     const list = currentMode === "campus" ? (hasCampus ? news : generalNews) : (hasGlobal ? generalNews : news);
     if (!list || list.length === 0) return [];
-    if (list.length <= ITEMS_PER_PAGE) return list;
+    
+    // Always return exactly ITEMS_PER_PAGE (4 items), wrapping around so all 4 card slots are filled
     const startIndex = currentPage * ITEMS_PER_PAGE;
     return Array.from({ length: ITEMS_PER_PAGE }).map((_, j) => {
       return list[(startIndex + j) % list.length];

@@ -109,7 +109,11 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
   if (campusNews.length > 0) {
     const campusPagesCount = Math.ceil(campusNews.length / ITEMS_PER_PAGE);
     for (let i = 0; i < campusPagesCount; i++) {
-      const slice = campusNews.slice(i * ITEMS_PER_PAGE, (i + 1) * ITEMS_PER_PAGE);
+      const slice: (NewsItem | GeneralNewsItem)[] = [];
+      const startIndex = i * ITEMS_PER_PAGE;
+      for (let k = 0; k < ITEMS_PER_PAGE; k++) {
+        slice.push(campusNews[(startIndex + k) % campusNews.length]);
+      }
       newsPages.push({ type: "campus", items: slice, label: "CAMPUS NEWS" });
     }
   }
@@ -117,7 +121,11 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
   if (globalNews.length > 0) {
     const globalPagesCount = Math.ceil(globalNews.length / ITEMS_PER_PAGE);
     for (let i = 0; i < globalPagesCount; i++) {
-      const slice = globalNews.slice(i * ITEMS_PER_PAGE, (i + 1) * ITEMS_PER_PAGE);
+      const slice: (NewsItem | GeneralNewsItem)[] = [];
+      const startIndex = i * ITEMS_PER_PAGE;
+      for (let k = 0; k < ITEMS_PER_PAGE; k++) {
+        slice.push(globalNews[(startIndex + k) % globalNews.length]);
+      }
       newsPages.push({ type: "global", items: slice, label: "GLOBAL NEWS" });
     }
   }
@@ -745,17 +753,26 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
         var campusList = campusNews || [];
         var globalList = globalNews || [];
 
-        var newsPages = [];
         if (campusList.length > 0) {
           var campusPagesCount = Math.ceil(campusList.length / ITEMS_PER_PAGE);
           for (var c = 0; c < campusPagesCount; c++) {
-            newsPages.push({ type: "campus", items: campusList.slice(c * ITEMS_PER_PAGE, (c + 1) * ITEMS_PER_PAGE), label: "CAMPUS NEWS" });
+            var sliceC = [];
+            var startC = c * ITEMS_PER_PAGE;
+            for (var k = 0; k < ITEMS_PER_PAGE; k++) {
+              sliceC.push(campusList[(startC + k) % campusList.length]);
+            }
+            newsPages.push({ type: "campus", items: sliceC, label: "CAMPUS NEWS" });
           }
         }
         if (globalList.length > 0) {
           var globalPagesCount = Math.ceil(globalList.length / ITEMS_PER_PAGE);
           for (var g = 0; g < globalPagesCount; g++) {
-            newsPages.push({ type: "global", items: globalList.slice(g * ITEMS_PER_PAGE, (g + 1) * ITEMS_PER_PAGE), label: "GLOBAL NEWS" });
+            var sliceG = [];
+            var startG = g * ITEMS_PER_PAGE;
+            for (var m = 0; m < ITEMS_PER_PAGE; m++) {
+              sliceG.push(globalList[(startG + m) % globalList.length]);
+            }
+            newsPages.push({ type: "global", items: sliceG, label: "GLOBAL NEWS" });
           }
         }
 
