@@ -236,18 +236,18 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
       <!-- Main Content Area -->
       <main class="flex-1 flex flex-col justify-between px-6 py-4 space-y-4 overflow-hidden">
         <!-- Hero Slideshow Section -->
-        <section class="relative w-full rounded-3xl overflow-hidden bg-gradient-to-r from-blue-50 via-sky-50/90 to-blue-100/70 border border-blue-100 shadow-2xs my-2 flex-shrink-0">
-          <div id="sig-hero-container" class="grid grid-cols-12 gap-6 p-6 lg:p-8 items-center min-h-0 relative">
+        <section class="relative w-full rounded-3xl overflow-hidden bg-gradient-to-r from-blue-50 via-sky-50/90 to-blue-100/70 border border-blue-100 shadow-2xs my-2 flex-shrink-0 h-[270px]">
+          <div id="sig-hero-container" class="grid grid-cols-12 gap-6 p-6 lg:p-8 items-center h-full relative">
             ${slides.map((slide, idx) => `
-              <div class="sig-hero-slide col-span-12 grid grid-cols-12 gap-6 items-center w-full ${idx === 0 ? "sig-visible" : "sig-hidden"}">
+              <div class="sig-hero-slide col-span-12 grid grid-cols-12 gap-6 items-center w-full h-full ${idx === 0 ? "sig-visible" : "sig-hidden"}">
                 <div class="col-span-6 z-10 flex flex-col justify-center space-y-2">
                   <span class="text-slate-500 font-semibold text-base tracking-tight">${escapeHtml(slide.welcomeText)}</span>
-                  <h2 class="text-3xl lg:text-4xl font-extrabold text-blue-950 tracking-tight leading-tight">${escapeHtml(slide.titleHighlight)}</h2>
+                  <h2 class="text-3xl lg:text-4xl font-extrabold text-blue-950 tracking-tight leading-tight line-clamp-2 h-16 flex items-center">${escapeHtml(slide.titleHighlight)}</h2>
                   <div class="w-10 h-1 bg-blue-600 rounded-full my-1"></div>
-                  <p class="text-slate-600 font-medium text-base leading-snug">${escapeHtml(slide.tagline)}</p>
+                  <p class="text-slate-600 font-medium text-base leading-snug line-clamp-2 h-12">${escapeHtml(slide.tagline)}</p>
                 </div>
                 <div class="col-span-6 relative z-10 flex-1">
-                  <div class="relative w-full h-56 lg:h-64 rounded-2xl overflow-hidden shadow-md border-2 border-white">
+                  <div class="relative w-full h-52 lg:h-56 rounded-2xl overflow-hidden shadow-md border-2 border-white">
                     <img src="${escapeHtml(slide.image)}" alt="${escapeHtml(slide.titleHighlight)}" class="w-full h-full object-cover object-center" />
                   </div>
                 </div>
@@ -269,14 +269,14 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
             </h3>
           </div>
 
-          <div id="sig-news-container" class="relative min-h-[365px]">
+          <div id="sig-news-container" class="relative h-[365px] overflow-hidden">
             ${newsPages.length === 0 ? `
               <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center h-[365px]">
                 <h4 class="font-extrabold text-blue-950 text-base mb-1">No News Available</h4>
               </div>
             ` : newsPages.map((page, pIdx) => `
               <div
-                class="sig-news-page grid grid-cols-4 gap-4 transition-all duration-300"
+                class="sig-news-page grid grid-cols-4 gap-4 transition-all duration-300 h-[365px]"
                 style="${pIdx === 0 ? "" : "display: none;"}"
                 data-label="${escapeHtml(page.label)}"
               >
@@ -324,22 +324,22 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
             </div>
           </div>
 
-          <div id="sig-events-container" class="relative">
+          <div id="sig-events-container" class="relative h-[275px] overflow-hidden">
             ${displayEvents.length === 0 ? `
-              <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center my-2 min-h-[230px]">
+              <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center my-2 h-[275px]">
                 <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xl mb-2">📅</div>
                 <h4 class="font-extrabold text-blue-950 text-base mb-1">No Active Events Scheduled</h4>
                 <p class="text-slate-500 text-xs max-w-sm">New campus events will appear here once published.</p>
               </div>
             ` : eventPages.map((page, pIdx) => `
               <div
-                class="sig-evt-page grid grid-cols-12 gap-3 items-stretch"
+                class="sig-evt-page grid grid-cols-12 gap-3 items-stretch h-[275px]"
                 style="${pIdx === 0 ? "" : "display: none;"}"
               >
                 <!-- Left: Featured Event -->
-                <div class="col-span-5 relative rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-5 min-h-[275px] border border-blue-900/30 bg-slate-900">
-                  <img src="${escapeHtml(page.featured.image)}" alt="${escapeHtml(page.featured.title)}" class="absolute inset-0 w-full h-full object-cover object-center" />
-                  <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-blue-950/80 to-blue-950/40"></div>
+                <div class="col-span-5 relative rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-5 h-[275px] border border-blue-900/30 bg-slate-900">
+                  <img src="${escapeHtml(page.featured.image)}" alt="${escapeHtml(page.featured.title)}" class="absolute inset-0 w-full h-full object-cover object-center opacity-80" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-blue-950/45 to-transparent"></div>
                   <div class="relative z-10 flex items-start justify-between">
                     <span class="inline-block px-2.5 py-0.5 bg-blue-600/90 text-white text-[11px] font-bold rounded-full border border-blue-400/40">
                       ${escapeHtml(page.featured.badge)}
@@ -369,11 +369,11 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
                 </div>
 
                 <!-- Right: Upcoming Events List -->
-                <div class="col-span-7 flex flex-col justify-between space-y-2">
+                <div class="col-span-7 flex flex-col justify-between space-y-2 h-[275px]">
                   ${page.items.map((evt) => {
-    const colors = getDateColorClasses(evt.color);
-    return `
-                      <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-2">
+                    const colors = getDateColorClasses(evt.color);
+                    return `
+                      <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-2 h-[81px] flex-shrink-0">
                         <div class="flex items-center gap-2.5 min-w-0">
                           <div class="w-12 h-12 rounded-xl border flex flex-col items-center justify-center flex-shrink-0 shadow-2xs ${colors.bg}">
                             <span class="text-base font-black leading-none ${colors.dayText}">${escapeHtml(evt.day)}</span>
@@ -393,7 +393,10 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
                         </div>
                       </div>
                     `;
-  }).join("")}
+                  }).join("")}
+                  ${Array.from({ length: Math.max(0, 3 - page.items.length) }).map(() => `
+                    <div class="h-[81px] flex-shrink-0 opacity-0 pointer-events-none"></div>
+                  `).join("")}
                 </div>
               </div>
             `).join("")}
@@ -406,22 +409,22 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
             <h3 class="text-lg font-extrabold text-blue-950 tracking-tight uppercase">ACHIEVEMENTS</h3>
           </div>
 
-          <div id="sig-ach-container" class="relative">
+          <div id="sig-ach-container" class="relative h-[320px] overflow-hidden">
             ${achPages.map((items, pIdx) => `
               <div
-                class="sig-ach-page grid grid-cols-2 gap-4 transition-all duration-300"
+                class="sig-ach-page grid grid-cols-2 gap-4 transition-all duration-300 h-[320px]"
                 style="${pIdx === 0 ? "" : "display: none;"}"
               >
                 ${items.map((item) => `
-                  <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                  <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs flex flex-col justify-between h-[320px]">
                     <div>
-                      <div class="relative rounded-xl overflow-hidden mb-2.5 aspect-16/10 bg-slate-100">
+                      <div class="relative rounded-xl overflow-hidden mb-2.5 aspect-16/10 bg-slate-100 h-[170px] w-full">
                         <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover object-center" />
                       </div>
-                      <h4 class="font-extrabold text-blue-950 text-base leading-snug mb-1">${escapeHtml(item.title)}</h4>
-                      <p class="text-slate-600 text-xs leading-relaxed line-clamp-2 mb-2">${escapeHtml(item.description)}</p>
+                      <h4 class="font-extrabold text-blue-950 text-base leading-snug mb-1 line-clamp-2 h-12 overflow-hidden">${escapeHtml(item.title)}</h4>
+                      <p class="text-slate-600 text-xs leading-relaxed line-clamp-2 mb-2 h-10 overflow-hidden">${escapeHtml(item.description)}</p>
                     </div>
-                    <div class="text-blue-600 text-xs font-bold pt-2 border-t border-slate-100">${escapeHtml(item.date)}</div>
+                    <div class="text-blue-600 text-xs font-bold pt-2 border-t border-slate-100 flex-shrink-0">${escapeHtml(item.date)}</div>
                   </div>
                 `).join("")}
               </div>
@@ -864,10 +867,10 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
               '</div>' +
             '</div>' : '';
 
-          html += '<div class="sig-evt-page grid grid-cols-12 gap-3 items-stretch" style="' + (isVis ? "" : "display: none;") + '">' +
-            '<div class="col-span-5 relative rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-5 min-h-[275px] border border-blue-900/30 bg-slate-900">' +
-              '<img src="' + escapeHtml(page.featured.image) + '" alt="' + escapeHtml(page.featured.title) + '" class="absolute inset-0 w-full h-full object-cover object-center" />' +
-              '<div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-blue-950/80 to-blue-950/40"></div>' +
+          html += '<div class="sig-evt-page grid grid-cols-12 gap-3 items-stretch h-[275px]" style="' + (isVis ? "" : "display: none;") + '">' +
+            '<div class="col-span-5 relative rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-5 h-[275px] border border-blue-900/30 bg-slate-900">' +
+              '<img src="' + escapeHtml(page.featured.image) + '" alt="' + escapeHtml(page.featured.title) + '" class="absolute inset-0 w-full h-full object-cover object-center opacity-80" />' +
+              '<div class="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-blue-950/45 to-transparent"></div>' +
               '<div class="relative z-10 flex items-start justify-between">' +
                 '<span class="inline-block px-2.5 py-0.5 bg-blue-600/90 text-white text-[11px] font-bold rounded-full border border-blue-400/40">' + escapeHtml(page.featured.badge) + '</span>' +
               '</div>' +
@@ -883,12 +886,12 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
                 '</div>' +
               '</div>' +
             '</div>' +
-            '<div class="col-span-7 flex flex-col justify-between space-y-2">';
+            '<div class="col-span-7 flex flex-col justify-between space-y-2 h-[275px]">';
 
           for (var e = 0; e < page.items.length; e++) {
             var evt = page.items[e];
             var colors = getDateColorClasses(evt.color);
-            html += '<div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-2">' +
+            html += '<div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-2 h-[81px] flex-shrink-0">' +
               '<div class="flex items-center gap-2.5 min-w-0">' +
                 '<div class="w-12 h-12 rounded-xl border flex flex-col items-center justify-center flex-shrink-0 shadow-2xs ' + colors.bg + '">' +
                   '<span class="text-base font-black leading-none ' + colors.dayText + '">' + escapeHtml(evt.day) + '</span>' +
@@ -907,6 +910,9 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
                 '<span class="px-2 py-0.5 text-[10px] font-bold rounded-lg border ' + escapeHtml(evt.categoryBadgeBg) + '">' + escapeHtml(evt.category) + '</span>' +
               '</div>' +
             '</div>';
+          }
+          for (var dummy = page.items.length; dummy < 3; dummy++) {
+            html += '<div class="h-[81px] flex-shrink-0 opacity-0 pointer-events-none"></div>';
           }
           html += '</div></div>';
         }

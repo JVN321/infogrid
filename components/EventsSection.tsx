@@ -192,19 +192,19 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
         )}
       </div>
 
-      {/* 2 Column Split Layout - Constrained Height for 9:16 Screens */}
-      <div className="grid grid-cols-12 gap-3 items-stretch">
+      {/* 2 Column Split Layout - Constrained Fixed Height for 9:16 Screens */}
+      <div className="grid grid-cols-12 gap-3 items-stretch h-[275px]">
         {/* Left Column: Featured Event Card Banner */}
-        <div className={`col-span-5 relative rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-5 min-h-[275px] border border-blue-900/30 select-none group bg-slate-900 transition-all duration-300 transform ${isFading ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"
+        <div className={`col-span-5 relative rounded-3xl overflow-hidden shadow-md flex flex-col justify-between p-5 h-[275px] min-h-[275px] border border-blue-900/30 select-none group bg-slate-900 transition-all duration-300 transform ${isFading ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"
           }`}>
           <Image
             src={activeFeatured.image}
             alt={activeFeatured.title}
             fill
             sizes="(max-width: 1024px) 100vw, 40vw"
-            className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
+            className="object-cover object-center opacity-80 group-hover:scale-105 transition-all duration-500"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-blue-950/80 to-blue-950/40"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-blue-950/45 to-transparent"></div>
 
           {/* Top Row: Badge */}
           <div className="relative z-10 flex items-start justify-between">
@@ -257,7 +257,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
 
         {/* Right Column: Upcoming Events Looping Carousel Container */}
         <div
-          className={`col-span-7 flex flex-col justify-between space-y-2 transition-all duration-300 transform ${isFading ? "opacity-0 translate-x-1 scale-[0.99]" : "opacity-100 translate-x-0 scale-100"
+          className={`col-span-7 flex flex-col justify-between space-y-2 h-[275px] transition-all duration-300 transform ${isFading ? "opacity-0 translate-x-1 scale-[0.99]" : "opacity-100 translate-x-0 scale-100"
             }`}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
@@ -266,7 +266,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
             Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
-                className="bg-white rounded-2xl p-3 border border-slate-100 shadow-xs flex items-center justify-between animate-pulse"
+                className="bg-white rounded-2xl p-3 border border-slate-100 shadow-xs flex items-center justify-between animate-pulse h-[81px]"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 bg-slate-200 rounded-xl"></div>
@@ -278,77 +278,82 @@ export const EventsSection: React.FC<EventsSectionProps> = ({
               </div>
             ))
           ) : (
-            visibleEvents.map((evt, idx) => {
-              const colors = getDateColorClasses(evt.color);
-              const eventUrl = getGridEventUrl(evt);
-              const uniqueKey = evt.externalId || evt.id ? `${evt.externalId || evt.id}-${idx}` : `evt-${currentPage}-${idx}`;
+            <>
+              {visibleEvents.map((evt, idx) => {
+                const colors = getDateColorClasses(evt.color);
+                const eventUrl = getGridEventUrl(evt);
+                const uniqueKey = evt.externalId || evt.id ? `${evt.externalId || evt.id}-${idx}` : `evt-${currentPage}-${idx}`;
 
-              return (
-                <a
-                  key={uniqueKey}
-                  href={eventUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-white hover:bg-slate-50/80 transition-all duration-300 rounded-2xl p-2.5 sm:p-3 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-2 group cursor-pointer"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    {/* Date Badge Box */}
-                    <div
-                      className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl border flex flex-col items-center justify-center flex-shrink-0 shadow-2xs ${colors.bg}`}
-                    >
-                      <span className={`text-sm sm:text-base font-black leading-none ${colors.dayText}`}>
-                        {evt.day}
-                      </span>
-                      <span className={`text-[8px] font-extrabold uppercase leading-none mt-0.5 ${colors.monthText}`}>
-                        {evt.month}
-                      </span>
-                    </div>
-
-                    {/* Event Details */}
-                    <div className="min-w-0">
-                      <h5 className="font-extrabold text-blue-950 text-xs sm:text-sm leading-tight truncate group-hover:text-blue-600 transition-colors">
-                        {evt.title}
-                      </h5>
-                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-slate-500 text-[11px] font-medium mt-0.5">
-                        <span className="flex items-center gap-1 flex-shrink-0">
-                          <Clock className="w-3 h-3 text-slate-400" />
-                          {evt.time}
+                return (
+                  <a
+                    key={uniqueKey}
+                    href={eventUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white hover:bg-slate-50/80 transition-all duration-300 rounded-2xl p-2.5 sm:p-3 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-2 group cursor-pointer h-[81px] flex-shrink-0"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {/* Date Badge Box */}
+                      <div
+                        className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl border flex flex-col items-center justify-center flex-shrink-0 shadow-2xs ${colors.bg}`}
+                      >
+                        <span className={`text-sm sm:text-base font-black leading-none ${colors.dayText}`}>
+                          {evt.day}
                         </span>
-                        <span className="flex items-center gap-1 truncate">
-                          <MapPin className="w-3 h-3 text-slate-400" />
-                          <span className="truncate">{evt.venue}</span>
+                        <span className={`text-[8px] font-extrabold uppercase leading-none mt-0.5 ${colors.monthText}`}>
+                          {evt.month}
                         </span>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Event Action & Category */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* Mini QR Code Preview on Event Card */}
-                    <div className="hidden sm:flex items-center gap-1 bg-slate-50 border border-slate-200 p-0.5 rounded-lg group-hover:border-blue-300 transition-colors" title="Scan to open on Grid">
-                      <div className="relative w-7 h-7 rounded-md overflow-hidden bg-white">
-                        <Image
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(eventUrl)}`}
-                          alt="QR Code"
-                          width={28}
-                          height={28}
-                          unoptimized
-                          className="w-full h-full object-contain"
-                        />
+                      {/* Event Details */}
+                      <div className="min-w-0">
+                        <h5 className="font-extrabold text-blue-950 text-xs sm:text-sm leading-tight truncate group-hover:text-blue-600 transition-colors">
+                          {evt.title}
+                        </h5>
+                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-slate-500 text-[11px] font-medium mt-0.5">
+                          <span className="flex items-center gap-1 flex-shrink-0">
+                            <Clock className="w-3 h-3 text-slate-400" />
+                            {evt.time}
+                          </span>
+                          <span className="flex items-center gap-1 truncate">
+                            <MapPin className="w-3 h-3 text-slate-400" />
+                            <span className="truncate">{evt.venue}</span>
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <span
-                      className={`hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold rounded-lg border ${evt.categoryBadgeBg}`}
-                    >
-                      {evt.category}
-                    </span>
-                    <span className="p-1.5 rounded-lg bg-slate-100 group-hover:bg-blue-600 group-hover:text-white text-slate-400 transition-colors">
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </span>
-                  </div>
-                </a>
-              );
-            })
+
+                    {/* Event Action & Category */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {/* Mini QR Code Preview on Event Card */}
+                      <div className="hidden sm:flex items-center gap-1 bg-slate-50 border border-slate-200 p-0.5 rounded-lg group-hover:border-blue-300 transition-colors" title="Scan to open on Grid">
+                        <div className="relative w-7 h-7 rounded-md overflow-hidden bg-white">
+                          <Image
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(eventUrl)}`}
+                            alt="QR Code"
+                            width={28}
+                            height={28}
+                            unoptimized
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                      </div>
+                      <span
+                        className={`hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold rounded-lg border ${evt.categoryBadgeBg}`}
+                      >
+                        {evt.category}
+                      </span>
+                      <span className="p-1.5 rounded-lg bg-slate-100 group-hover:bg-blue-600 group-hover:text-white text-slate-400 transition-colors">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
+                  </a>
+                );
+              })}
+              {Array.from({ length: Math.max(0, 3 - visibleEvents.length) }).map((_, dIdx) => (
+                <div key={`dummy-${dIdx}`} className="h-[81px] flex-shrink-0 opacity-0 pointer-events-none" />
+              ))}
+            </>
           )}
         </div>
       </div>
