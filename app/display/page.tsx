@@ -122,10 +122,10 @@ export default function DisplayPage() {
     // Initial sync
     syncFromApi();
 
-    // Background polling every 2 minutes without visual re-rendering if data is unchanged
+    // Background polling every 10 minutes without visual re-rendering if data is unchanged
     const intervalId = setInterval(() => {
       syncFromApi();
-    }, 120 * 1000);
+    }, 10 * 60 * 1000);
 
     return () => clearInterval(intervalId);
   }, []);

@@ -996,9 +996,9 @@ function renderSignageHtml(data: PortalData, dataVersion: string = "default"): s
         if (portalData.achievements) patchAchievements(portalData.achievements);
       }
 
-      /* Silent Idle Background Sync (No Timers, No Visual Interruption) */
+      /* Silent Idle Background Sync (10-minute interval) */
       function scheduleBackgroundFetch() {
-        var delay = 90000; // 90 seconds silent background fetch
+        var delay = 600000; // 10 minutes silent background fetch
         if (typeof window.requestIdleCallback === "function") {
           setTimeout(function () {
             window.requestIdleCallback(syncDataInBackground, { timeout: 10000 });
